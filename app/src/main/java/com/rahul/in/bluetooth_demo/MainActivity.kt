@@ -17,7 +17,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.LinearLayout
-import android.widget.RadioGroup
 import android.widget.Toast
 import com.polidea.rxandroidble2.RxBleClient
 import com.polidea.rxandroidble2.scan.ScanFilter
@@ -29,7 +28,6 @@ import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
 import org.jetbrains.anko.coroutines.experimental.bg
 import org.jetbrains.anko.sdk25.coroutines.onCheckedChange
-import org.jetbrains.anko.view
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -41,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     var bluetoothSocket: BluetoothSocket? = null
 
     val nearbyDevices = HashSet<BluetoothDevice>()
+    val devicesList = arrayListOf<BluetoothDevice>()
     val processedNearbyDevices = HashSet<BluetoothDevice>()
     var mBluetoothAdapter: BluetoothAdapter? = null
 
@@ -99,7 +98,7 @@ class MainActivity : AppCompatActivity() {
         btnConAsClient.setOnClickListener {
             bg {
                 if (!connectAsServer) {
-                    connectAsClient(nearbyDevices.first())
+                    connectAsClient()
                 }
             }
         }
@@ -128,26 +127,26 @@ class MainActivity : AppCompatActivity() {
             val action = p1?.action
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 var device: BluetoothDevice? = p1?.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
-                var deviceName :String? = null
+                var deviceName: String? = null
                 var deviceHardwareAddress = device?.address
 
 
                 if (device != null) {
-                    deviceName = device.name + " ("+(deviceHardwareAddress)+")"
+                    deviceName = device.name + " (" + (deviceHardwareAddress) + ")"
 
-                }else{
+                } else {
                     deviceName = deviceHardwareAddress
                 }
 
-                if(deviceName == null){
+                if (deviceName == null) {
                     deviceName = deviceHardwareAddress
                 }
 
 
                 if (device != null) {
                     val newDevice = nearbyDevices.add(device)
-                    if(newDevice) {
-                        addDevice(deviceName!!)
+                    if (newDevice) {
+                        addDevice(deviceName!!,device)
                         printLogInScreen("BR - device found MAC = ${deviceHardwareAddress}")
                         printLogInScreen("BR - device name = ${deviceName}")
                     }
@@ -157,7 +156,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun addDevice(deviceName: String) {
+    fun addDevice(deviceName: String, device: BluetoothDevice) {
         val box = CheckBox(this)
         val lparams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         box.layoutParams = lparams
@@ -167,21 +166,22 @@ class MainActivity : AppCompatActivity() {
         box.onCheckedChange { buttonView, isChecked ->
 
             val currentIndex = buttonView!!.tag as Int
-            if(isChecked){
+            if (isChecked) {
                 (0 until ll_container.childCount).map {
-                    val box =  ll_container.getChildAt(it) as CheckBox
-                    if(ll_container.getChildAt(it).tag == currentIndex){
+                    val box = ll_container.getChildAt(it) as CheckBox
+                    if (ll_container.getChildAt(it).tag == currentIndex) {
                         //Do nothing
-                    }else{
+                    } else {
                         box.isChecked = false
                     }
                 }
-            }else{
+            } else {
                 // Do nothing
             }
         }
 
         ll_container.addView(box)
+        devicesList.add(device)
     }
 
     val discoverAbleReceiver = object : BroadcastReceiver() {
@@ -325,18 +325,25 @@ class MainActivity : AppCompatActivity() {
                         if (connectAsServer) {
                             connectAsServer(device)
                         } else {
-                            connectAsClient(device)
+                            connectAsClient()
                         }
 
                     }
                 }
     }
 
-    fun connectAsClient(device: BluetoothDevice) {
+    fun connectAsClient() {
 
+        if (nearbyDevices.size == 0) {
+            printLogInScreen("No devices found yet")
+            return
+        }
+        var device:BluetoothDevice ? = null
+        (0 until ll_container.childCount)
+                .map { if((ll_container.getChildAt(it) as CheckBox).isChecked){device = devicesList[it]} }
         try {
 //            val bluetoothSocket = device.createRfcommSocketToServiceRecord(uuid)
-            bluetoothSocket = device.createInsecureRfcommSocketToServiceRecord(uuid)
+            bluetoothSocket = device!!.createInsecureRfcommSocketToServiceRecord(uuid)
 
 //                mBluetoothAdapter!!.cancelDiscovery()
             bluetoothSocket!!.connect() //blocking call
@@ -352,7 +359,7 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
             runOnUiThread {
-                printLogInScreen("client - exception device - ${device.address}")
+                printLogInScreen("client - exception device - ${device!!.address}")
                 printLogInScreen(e.localizedMessage)
             }
 
