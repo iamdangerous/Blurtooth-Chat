@@ -10,12 +10,14 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.*
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import android.util.AttributeSet
 import android.util.Log
 import android.view.View
+import android.view.ViewGroup
+import android.widget.CheckBox
+import android.widget.LinearLayout
+import android.widget.RadioGroup
 import android.widget.Toast
 import com.polidea.rxandroidble2.RxBleClient
 import com.polidea.rxandroidble2.scan.ScanFilter
@@ -26,9 +28,8 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
 import org.jetbrains.anko.coroutines.experimental.bg
-import java.io.ByteArrayOutputStream
-import java.io.IOException
-import java.io.OutputStream
+import org.jetbrains.anko.sdk25.coroutines.onCheckedChange
+import org.jetbrains.anko.view
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -48,6 +49,7 @@ class MainActivity : AppCompatActivity() {
     val uuid: UUID = UUID.fromString(APP_UUID)
 
     var connectAsServer = false
+    val presenter = MainActivityPresenter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,17 +70,25 @@ class MainActivity : AppCompatActivity() {
             enableDiscoverablity()
 //            startScan()
             mBluetoothAdapter?.startDiscovery()
+
         }
         btnStopScan.setOnClickListener { stopScan() }
-        btnDraw.setOnClickListener { draw() }
+
+
         switchServer.setOnCheckedChangeListener { button, isChecked ->
             connectAsServer = isChecked
             if (isChecked) {
                 switchServer.text = "Connect as server"
+                btnStartServer.visibility = View.VISIBLE
+                btnConAsClient.visibility = View.GONE
             } else {
                 switchServer.text = "Connect as client"
+                btnStartServer.visibility = View.GONE
+                btnConAsClient.visibility = View.VISIBLE
             }
         }
+
+        switchServer.isChecked = true
 
         btnStartServer.setOnClickListener {
             bg {
@@ -95,58 +105,83 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnSendData.setOnClickListener {
-            try {
-                if (bluetoothSocket != null) {
-                    val outputStream: OutputStream = bluetoothSocket!!.outputStream
-                    val output = ByteArrayOutputStream(4)
-                    output.write(10)
-                    outputStream.write(output.toByteArray())
-                }
-            } catch (e: IOException) {
-                printLogInScreen("IO exception in write")
-            }
+            writeDataToSocket()
         }
 
 //        createConnection()
     }
 
+    fun writeDataToSocket() {
+        presenter.writeData(bluetoothSocket, mBluetoothAdapter);
+    }
+
+
     fun readDataFromSocket() {
         bg {
-
-            try {
-                if (bluetoothSocket != null) {
-                    var inputStream = bluetoothSocket!!.inputStream
-                    val mmBuffer = ByteArray(1024)
-                    var numBytes = 0
-
-                    //Keep listening unless exception is thrown
-                    printLogInScreen("Read data from socket")
-                    while (true) {
-                        numBytes = inputStream.read(mmBuffer)
-                        val inputAsString = inputStream.bufferedReader().use { it.readText() }
-                        printLogInScreen(inputAsString)
-                    }
-                }
-            } catch (e: IOException) {
-                printLogInScreen("IO exception in read")
-                e.printStackTrace()
-            }
+            presenter.readData(bluetoothSocket);
         }
     }
+
 
     val mReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
             val action = p1?.action
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 var device: BluetoothDevice? = p1?.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
-                var deviceName = device?.name
+                var deviceName :String? = null
                 var deviceHardwareAddress = device?.address
+
+
                 if (device != null) {
-                    nearbyDevices.add(device)
+                    deviceName = device.name + " ("+(deviceHardwareAddress)+")"
+
+                }else{
+                    deviceName = deviceHardwareAddress
                 }
-                printLogInScreen("BR - device found MAC = ${deviceHardwareAddress}")
+
+                if(deviceName == null){
+                    deviceName = deviceHardwareAddress
+                }
+
+
+                if (device != null) {
+                    val newDevice = nearbyDevices.add(device)
+                    if(newDevice) {
+                        addDevice(deviceName!!)
+                        printLogInScreen("BR - device found MAC = ${deviceHardwareAddress}")
+                        printLogInScreen("BR - device name = ${deviceName}")
+                    }
+                }
+
             }
         }
+    }
+
+    fun addDevice(deviceName: String) {
+        val box = CheckBox(this)
+        val lparams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        box.layoutParams = lparams
+        box.tag = nearbyDevices.size - 1
+        box.text = deviceName
+
+        box.onCheckedChange { buttonView, isChecked ->
+
+            val currentIndex = buttonView!!.tag as Int
+            if(isChecked){
+                (0 until ll_container.childCount).map {
+                    val box =  ll_container.getChildAt(it) as CheckBox
+                    if(ll_container.getChildAt(it).tag == currentIndex){
+                        //Do nothing
+                    }else{
+                        box.isChecked = false
+                    }
+                }
+            }else{
+                // Do nothing
+            }
+        }
+
+        ll_container.addView(box)
     }
 
     val discoverAbleReceiver = object : BroadcastReceiver() {
@@ -171,6 +206,8 @@ class MainActivity : AppCompatActivity() {
 
     fun initVars() {
         rxBleClient = (application as App).rxBleClient
+
+        presenter.callback = MainActivityPresenter.PresenterCallback { msg -> printLogInScreen(msg!!) }
     }
 
     fun enableDiscoverablity() {
@@ -184,7 +221,10 @@ class MainActivity : AppCompatActivity() {
 
         val rxPermissions = RxPermissions(this)
 
-        rxPermissions.request(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.BLUETOOTH_ADMIN)
+        rxPermissions.request(Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.BLUETOOTH_ADMIN,
+                Manifest.permission.READ_PHONE_STATE
+        )
                 .subscribe { _ -> }
     }
 
@@ -348,47 +388,6 @@ class MainActivity : AppCompatActivity() {
             if (resultCode == Activity.RESULT_OK) {
                 enableDiscoverablity()
             }
-        }
-    }
-
-
-    fun draw() {
-        val myView = MyView(this)
-//        llContainer.addView(myView)
-    }
-
-    inner class MyView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) : View(context, attrs, defStyleAttr) {
-
-        val paint = Paint()
-        val shadowPaint = Paint()
-        lateinit var ovalRect: RectF
-
-        init {
-            paint.style = Paint.Style.FILL
-            shadowPaint.style = Paint.Style.STROKE
-            shadowPaint.color = Color.BLACK
-            shadowPaint.isAntiAlias = true
-            shadowPaint.strokeWidth = 10f
-            shadowPaint.maskFilter = BlurMaskFilter(8f, BlurMaskFilter.Blur.OUTER)
-
-            //oval
-//            RectF(x,y,x+width,y+height);
-            val x = 100f
-            val y = 100f
-            val width = 200f
-            val height = 100f
-            ovalRect = RectF(x, y, x + width, y + height)
-        }
-
-        override fun draw(canvas: Canvas?) {
-            super.draw(canvas)
-
-            paint.color = Color.RED
-//            canvas?.drawCircle(200f, 200f, 200f, paint)
-//            canvas?.drawCircle(200f, 200f, 201f, shadowPaint)
-            canvas?.drawOval(ovalRect, paint)
-
-            //draw shadow
         }
     }
 
