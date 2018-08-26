@@ -31,7 +31,14 @@ import org.jetbrains.anko.sdk25.coroutines.onCheckedChange
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(),MainActivityPresenter.PresenterCallback {
+    override fun printInScreen(msg: String?) {
+        printLogInScreen(msg!!)
+    }
+
+    override fun reConnectAsServer() {
+        connectAsServer()
+    }
 
     val REQUEST_ENABLE_BT = 100
     lateinit var rxBleClient: RxBleClient
@@ -39,6 +46,10 @@ class MainActivity : AppCompatActivity() {
     var bluetoothSocket: BluetoothSocket? = null
 
     val nearbyDevices = HashSet<BluetoothDevice>()
+
+    val failedDevices = HashSet<BluetoothDevice>() //When the connection is failed
+    val completedDevices = HashSet<BluetoothDevice>() //When the data is successfully shared
+
     val devicesList = arrayListOf<BluetoothDevice>()
     val processedNearbyDevices = HashSet<BluetoothDevice>()
     var mBluetoothAdapter: BluetoothAdapter? = null
@@ -107,11 +118,99 @@ class MainActivity : AppCompatActivity() {
             writeDataToSocket()
         }
 
+        btnUpdateClient.setOnClickListener{
+            updateSelectedClient()
+        }
+
 //        createConnection()
     }
 
+
+    fun connectAsServer(device: BluetoothDevice? = null) {
+        printLogInScreen("starting server")
+        try {
+//            val serverSocket: BluetoothServerSocket = mBluetoothAdapter!!.listenUsingRfcommWithServiceRecord(APP_NAME, uuid)
+            val serverSocket: BluetoothServerSocket = mBluetoothAdapter!!.listenUsingInsecureRfcommWithServiceRecord(APP_NAME, uuid)
+
+            bluetoothSocket = serverSocket.accept() //blocking call
+
+            log("connected as server")
+            printLogInScreen("connected as server")
+            if (bluetoothSocket != null) {
+//                bluetoothSocket!!.close()
+            }
+            readDataFromSocket()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            runOnUiThread {
+                printLogInScreen("exception - server - device = ${device?.address}")
+            }
+
+//            connectAsServer(device)
+        }
+    }
+
+    fun connectAsClient() {
+
+        if (nearbyDevices.size == 0) {
+            printLogInScreen("No devices found yet")
+            return
+        }
+        var device: BluetoothDevice? = getSelectedBleDevice()
+        if(device  == null){
+            printLogInScreen("Cannot connect with the device , its NULL")
+            return
+        }
+
+        try {
+            bluetoothSocket = device!!.createInsecureRfcommSocketToServiceRecord(uuid)
+
+//                mBluetoothAdapter!!.cancelDiscovery()
+            bluetoothSocket!!.connect() //blocking call
+            log("connected as client")
+            printLogInScreen("connected as client")
+
+            if (bluetoothSocket != null) {
+//                manageSocket(bluetoothSocket)
+//                bluetoothSocket!!.close()
+            }
+
+            readDataFromSocket()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            runOnUiThread {
+                printLogInScreen("client - exception device - ${device!!.address}")
+                printLogInScreen(e.localizedMessage)
+            }
+
+//            connectAsClient(device)
+        }
+
+    }
+
+    fun updateSelectedClient(){
+
+        bg{
+        //Close previous connection
+        if (bluetoothSocket != null) {
+            if(bluetoothSocket!!.isConnected) {
+                bluetoothSocket!!.outputStream.flush()
+                bluetoothSocket!!.outputStream.close()
+            }
+
+        }
+        printLogInScreen("force socket close")
+
+        //start new connection as client with new ble device
+
+        connectAsClient()
+        }
+    }
+
+
+
     fun writeDataToSocket() {
-        presenter.writeData(bluetoothSocket, mBluetoothAdapter);
+        presenter.writeData(bluetoothSocket, mBluetoothAdapter, getSelectedBleDevice())
     }
 
 
@@ -122,39 +221,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    val mReceiver: BroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(p0: Context?, p1: Intent?) {
-            val action = p1?.action
-            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                var device: BluetoothDevice? = p1?.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
-                var deviceName: String? = null
-                var deviceHardwareAddress = device?.address
 
-
-                if (device != null) {
-                    deviceName = device.name + " (" + (deviceHardwareAddress) + ")"
-
-                } else {
-                    deviceName = deviceHardwareAddress
-                }
-
-                if (deviceName == null) {
-                    deviceName = deviceHardwareAddress
-                }
-
-
-                if (device != null) {
-                    val newDevice = nearbyDevices.add(device)
-                    if (newDevice) {
-                        addDevice(deviceName!!,device)
-                        printLogInScreen("BR - device found MAC = ${deviceHardwareAddress}")
-                        printLogInScreen("BR - device name = ${deviceName}")
-                    }
-                }
-
-            }
-        }
-    }
 
     fun addDevice(deviceName: String, device: BluetoothDevice) {
         val box = CheckBox(this)
@@ -184,30 +251,12 @@ class MainActivity : AppCompatActivity() {
         devicesList.add(device)
     }
 
-    val discoverAbleReceiver = object : BroadcastReceiver() {
-        override fun onReceive(p0: Context?, p1: Intent?) {
-            var action = p1?.action
-            if (BluetoothAdapter.ACTION_SCAN_MODE_CHANGED.equals(action)) {
-                var mode = p1?.getIntExtra(BluetoothAdapter.EXTRA_SCAN_MODE, BluetoothAdapter.ERROR)
-                when (mode) {
-                    BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE ->
-                        printLogInScreen("The device is in discoverable mode.")
-                    BluetoothAdapter.SCAN_MODE_CONNECTABLE ->
-                        printLogInScreen("The device isn't in discoverable mode but can still receive connections.")
-                    BluetoothAdapter.SCAN_MODE_NONE ->
-                        printLogInScreen("The device isn't in discoverable mode and cannot receive connections.")
-                    else ->
-                        printLogInScreen("unknown discover mode.")
-                }
-            }
-        }
 
-    }
 
     fun initVars() {
         rxBleClient = (application as App).rxBleClient
 
-        presenter.callback = MainActivityPresenter.PresenterCallback { msg -> printLogInScreen(msg!!) }
+        presenter.callback = this
     }
 
     fun enableDiscoverablity() {
@@ -244,16 +293,114 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun toggleBluetooth() {
-
-    }
-
     fun printLogInScreen(msg: String) {
         runOnUiThread {
             var text = tvLog.text
             val newMsg = msg + "\n" + text.toString()
             tvLog.text = newMsg
         }
+    }
+
+    fun toast(msg: String) {
+        val TAG = "MAIN_ACTIVITY"
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+        Log.e(TAG, msg)
+    }
+
+    fun log(msg: String) {
+        val TAG = "MAIN_ACTIVITY"
+        Log.d(TAG, msg)
+    }
+
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_ENABLE_BT) {
+            if (resultCode == Activity.RESULT_OK) {
+                enableDiscoverablity()
+            }
+        }
+    }
+
+    val mReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(p0: Context?, p1: Intent?) {
+            val action = p1?.action
+            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                var device: BluetoothDevice? = p1?.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                var deviceName: String? = null
+                var deviceHardwareAddress = device?.address
+
+
+                if (device != null) {
+                    deviceName = device.name + " (" + (deviceHardwareAddress) + ")"
+
+                } else {
+                    deviceName = deviceHardwareAddress
+                }
+
+                if (deviceName == null) {
+                    deviceName = deviceHardwareAddress
+                }
+
+
+                if (device != null) {
+                    val newDevice = nearbyDevices.add(device)
+                    if (newDevice) {
+                        addDevice(deviceName!!, device)
+                        printLogInScreen("BR - device found MAC = ${deviceHardwareAddress}")
+                        printLogInScreen("BR - device name = ${deviceName}")
+                    }
+                }
+
+            }
+        }
+    }
+
+    val discoverAbleReceiver = object : BroadcastReceiver() {
+        override fun onReceive(p0: Context?, p1: Intent?) {
+            var action = p1?.action
+            if (BluetoothAdapter.ACTION_SCAN_MODE_CHANGED.equals(action)) {
+                var mode = p1?.getIntExtra(BluetoothAdapter.EXTRA_SCAN_MODE, BluetoothAdapter.ERROR)
+                when (mode) {
+                    BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE ->
+                        printLogInScreen("The device is in discoverable mode.")
+                    BluetoothAdapter.SCAN_MODE_CONNECTABLE ->
+                        printLogInScreen("The device isn't in discoverable mode but can still receive connections.")
+                    BluetoothAdapter.SCAN_MODE_NONE ->
+                        printLogInScreen("The device isn't in discoverable mode and cannot receive connections.")
+                    else ->
+                        printLogInScreen("unknown discover mode.")
+                }
+            }
+        }
+
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        unregisterReceiver(mReceiver)
+    }
+
+    fun createConnection() {
+
+        fun manageSocket(bluetoothSocket: BluetoothSocket) {
+
+        }
+
+        val scheduler = Schedulers.newThread()
+        Flowable.interval(10, TimeUnit.SECONDS)
+                .onBackpressureLatest()
+                .observeOn(scheduler)
+                .subscribe {
+                    for (device in nearbyDevices) {
+                        if (connectAsServer) {
+                            connectAsServer(device)
+                        } else {
+                            connectAsClient()
+                        }
+
+                    }
+                }
     }
 
     fun startScan() {
@@ -286,88 +433,6 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    fun connectAsServer(device: BluetoothDevice? = null) {
-        printLogInScreen("starting server")
-        try {
-//            val serverSocket: BluetoothServerSocket = mBluetoothAdapter!!.listenUsingRfcommWithServiceRecord(APP_NAME, uuid)
-            val serverSocket: BluetoothServerSocket = mBluetoothAdapter!!.listenUsingInsecureRfcommWithServiceRecord(APP_NAME, uuid)
-
-            bluetoothSocket = serverSocket.accept() //blocking call
-
-            log("connected as server")
-            printLogInScreen("connected as server")
-            if (bluetoothSocket != null) {
-//                bluetoothSocket!!.close()
-            }
-            readDataFromSocket()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            runOnUiThread {
-                printLogInScreen("exception - server - device = ${device?.address}")
-            }
-
-//            connectAsServer(device)
-        }
-    }
-
-    fun createConnection() {
-
-        fun manageSocket(bluetoothSocket: BluetoothSocket) {
-
-        }
-
-        val scheduler = Schedulers.newThread()
-        Flowable.interval(10, TimeUnit.SECONDS)
-                .onBackpressureLatest()
-                .observeOn(scheduler)
-                .subscribe {
-                    for (device in nearbyDevices) {
-                        if (connectAsServer) {
-                            connectAsServer(device)
-                        } else {
-                            connectAsClient()
-                        }
-
-                    }
-                }
-    }
-
-    fun connectAsClient() {
-
-        if (nearbyDevices.size == 0) {
-            printLogInScreen("No devices found yet")
-            return
-        }
-        var device:BluetoothDevice ? = null
-        (0 until ll_container.childCount)
-                .map { if((ll_container.getChildAt(it) as CheckBox).isChecked){device = devicesList[it]} }
-        try {
-//            val bluetoothSocket = device.createRfcommSocketToServiceRecord(uuid)
-            bluetoothSocket = device!!.createInsecureRfcommSocketToServiceRecord(uuid)
-
-//                mBluetoothAdapter!!.cancelDiscovery()
-            bluetoothSocket!!.connect() //blocking call
-            log("connected as client")
-            printLogInScreen("connected as client")
-
-            if (bluetoothSocket != null) {
-//                manageSocket(bluetoothSocket)
-//                bluetoothSocket!!.close()
-            }
-
-            readDataFromSocket()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            runOnUiThread {
-                printLogInScreen("client - exception device - ${device!!.address}")
-                printLogInScreen(e.localizedMessage)
-            }
-
-//            connectAsClient(device)
-        }
-
-    }
-
     fun stopScan() {
         if (scanSubscription != null) {
             scanSubscription!!.dispose()
@@ -376,30 +441,15 @@ class MainActivity : AppCompatActivity() {
         toast("Scanning stopped")
     }
 
-
-    fun toast(msg: String) {
-        val TAG = "MAIN_ACTIVITY"
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-        Log.e(TAG, msg)
+    fun getSelectedBleDevice():BluetoothDevice?{
+        var device: BluetoothDevice? = null
+        (0 until ll_container.childCount)
+                .map {
+                    if ((ll_container.getChildAt(it) as CheckBox).isChecked) {
+                        device = devicesList[it]
+                    }
+                }
+        return device
     }
 
-    fun log(msg: String) {
-        val TAG = "MAIN_ACTIVITY"
-        Log.d(TAG, msg)
-    }
-
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_ENABLE_BT) {
-            if (resultCode == Activity.RESULT_OK) {
-                enableDiscoverablity()
-            }
-        }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        unregisterReceiver(mReceiver)
-    }
 }

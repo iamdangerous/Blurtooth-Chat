@@ -2,13 +2,15 @@ package com.rahul.in.bluetooth_demo;
 
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
+import com.google.gson.Gson;
+
 import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,6 +42,9 @@ public class MainActivityPresenter {
                         }
                         if (sb.length() > 0) {
                             callback.printInScreen("data from IS = " + sb);
+                            callback.printInScreen("Closing connection AS Reading is  DONE");
+                            bluetoothSocket.close();
+                            callback.reConnectAsServer();
                         }
                     }
 
@@ -50,33 +55,27 @@ public class MainActivityPresenter {
         } catch (IOException e) {
             callback.printInScreen("IO exception in read");
             e.printStackTrace();
+            callback.reConnectAsServer();
         }
     }
 
-    public void writeData(BluetoothSocket bluetoothSocket, BluetoothAdapter bluetoothAdapter) {
+    public void writeData(BluetoothSocket bluetoothSocket, BluetoothAdapter bluetoothAdapter, BluetoothDevice device) {
         try {
             if (bluetoothSocket != null && bluetoothSocket.isConnected()) {
                 OutputStream os = bluetoothSocket.getOutputStream();
                 ByteArrayOutputStream bos = new ByteArrayOutputStream(12);
                 String deviceName = bluetoothAdapter != null ? bluetoothAdapter.getName() : "Unkown";
-                String text = "Hello from " + deviceName;
+                String text = prepareMessge(deviceName, device.getAddress());
                 bos.write(text.getBytes());
                 bos.writeTo(os);
                 bos.flush();
                 bos.close();
-//                os.flush();
-//                os.close();
 
+                //Close the connection once writing is done
+                os.flush();
+                os.close();
 
-                //Read from above OS
-                ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-                StringBuilder sb = new StringBuilder();
-                while (bis.available() > 0) {
-                    sb.append((char) bis.read());
-                }
-                callback.printInScreen("Text = " + sb.toString());
-
-
+                callback.printInScreen("Closing connection AS Writing DONE");
             } else {
                 callback.printInScreen("bluetooth socket is null WHILE WRITING");
             }
@@ -129,5 +128,40 @@ public class MainActivityPresenter {
 
     public interface PresenterCallback {
         void printInScreen(String msg);
+        void reConnectAsServer();
+    }
+
+    public String prepareMessge(String deviceName, String userName) {
+        String imageUrl = "image_url_" + deviceName;
+        String displayName = "display_name" + deviceName;
+        Double lat = 12.4d;
+        Double lng = 33.22d;
+        String aboutMe = "About me lorem ipsum lorem ipsum lorem ipsum " +
+                "About me lorem ipsum lorem ipsum lorem ipsum " +
+                "About me lorem ipsum lorem ipsum lorem ipsum " + deviceName;
+
+        Message message = new Message(deviceName, userName, imageUrl, displayName, lat, lng, aboutMe);
+
+        return new Gson().toJson(message);
+    }
+
+    public class Message {
+        String deviceName;
+        String userName;
+        String imageUrl;
+        String displayName;
+        Double lat;
+        Double lng;
+        String aboutMe;
+
+        public Message(String deviceName, String userName, String imageUrl, String displayName, Double lat, Double lng, String aboutMe) {
+            this.deviceName = deviceName;
+            this.userName = userName;
+            this.imageUrl = imageUrl;
+            this.displayName = displayName;
+            this.lat = lat;
+            this.lng = lng;
+            this.aboutMe = aboutMe;
+        }
     }
 }
