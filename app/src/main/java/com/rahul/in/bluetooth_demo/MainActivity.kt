@@ -31,7 +31,7 @@ import org.jetbrains.anko.sdk25.coroutines.onCheckedChange
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-class MainActivity : AppCompatActivity(),MainActivityPresenter.PresenterCallback {
+class MainActivity : BleBaseActivity(),MainActivityPresenter.PresenterCallback {
     override fun printInScreen(msg: String?) {
         printLogInScreen(msg!!)
     }
@@ -40,23 +40,14 @@ class MainActivity : AppCompatActivity(),MainActivityPresenter.PresenterCallback
         connectAsServer()
     }
 
-    val REQUEST_ENABLE_BT = 100
-    lateinit var rxBleClient: RxBleClient
-    var scanSubscription: Disposable? = null
     var bluetoothSocket: BluetoothSocket? = null
-
-    val nearbyDevices = HashSet<BluetoothDevice>()
 
     val failedDevices = HashSet<BluetoothDevice>() //When the connection is failed
     val completedDevices = HashSet<BluetoothDevice>() //When the data is successfully shared
 
     val devicesList = arrayListOf<BluetoothDevice>()
     val processedNearbyDevices = HashSet<BluetoothDevice>()
-    var mBluetoothAdapter: BluetoothAdapter? = null
 
-    val APP_NAME = "rahul"
-    val APP_UUID = "8ff5b74a-be5f-4cb4-adc7-124f39750b04"
-    val uuid: UUID = UUID.fromString(APP_UUID)
 
     var connectAsServer = false
     val presenter = MainActivityPresenter()
@@ -253,13 +244,12 @@ class MainActivity : AppCompatActivity(),MainActivityPresenter.PresenterCallback
 
 
 
-    fun initVars() {
-        rxBleClient = (application as App).rxBleClient
-
+    override fun initVars() {
+        super.initVars()
         presenter.callback = this
     }
 
-    fun enableDiscoverablity() {
+    override fun enableDiscoverablity() {
         printLogInScreen("enable discover mode")
         val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
         discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 3600)
@@ -278,47 +268,11 @@ class MainActivity : AppCompatActivity(),MainActivityPresenter.PresenterCallback
     }
 
 
-    fun setupBluetooth() {
-        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (mBluetoothAdapter == null) {
-            toast("Device doesn't support Bluetooth")
-            return
-        }
-        if (!mBluetoothAdapter!!.isEnabled()) {
-            printLogInScreen("Enable adapter")
-            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
-        } else {
-            printLogInScreen("bluetooth already enabled")
-        }
-    }
-
-    fun printLogInScreen(msg: String) {
+    override fun printLogInScreen(msg: String) {
         runOnUiThread {
             var text = tvLog.text
             val newMsg = msg + "\n" + text.toString()
             tvLog.text = newMsg
-        }
-    }
-
-    fun toast(msg: String) {
-        val TAG = "MAIN_ACTIVITY"
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-        Log.e(TAG, msg)
-    }
-
-    fun log(msg: String) {
-        val TAG = "MAIN_ACTIVITY"
-        Log.d(TAG, msg)
-    }
-
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_ENABLE_BT) {
-            if (resultCode == Activity.RESULT_OK) {
-                enableDiscoverablity()
-            }
         }
     }
 

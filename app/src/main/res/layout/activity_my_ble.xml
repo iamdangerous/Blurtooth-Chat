@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v4.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MyBleActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        tools:context=".MyBleActivity">
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnTurnOnBlutooth"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Turn on bl" />
+
+            <Button
+                android:id="@+id/btnStartScan"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="start Scan" />
+
+            <Button
+                android:id="@+id/btnStopScan"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="stop Scan" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnTurnOffBluetooth"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="turn of Bl" />
+
+            <android.support.v7.widget.SwitchCompat
+                android:id="@+id/switchServer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Connect as client" />
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnUpdateClient"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Update client" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnStartServer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start server" />
+
+            <Button
+                android:id="@+id/btnConAsClient"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Connect as client" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/ll_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnSendData"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Send data" />
+
+            <Button
+                android:id="@+id/btnReadData"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Read data" />
+
+        </LinearLayout>
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/tvLog"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="LOGG" />
+        </ScrollView>
+
+
+        <!--<LinearLayout-->
+        <!--android:id="@+id/llContainer"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:orientation="vertical">-->
+
+        <!--</LinearLayout>-->
+
+    </LinearLayout>
+</android.support.v4.widget.NestedScrollView>
