@@ -28,6 +28,10 @@ open class BleBaseActivity : AppCompatActivity() {
         rxBleClient = (application as App).rxBleClient
     }
 
+    open fun setClicks(){
+        //Do nothing
+    }
+
     fun setupBluetooth() {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (mBluetoothAdapter == null) {

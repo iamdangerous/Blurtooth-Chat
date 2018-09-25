@@ -66,15 +66,7 @@ class MainActivity : BleBaseActivity(),MainActivityPresenter.PresenterCallback {
 
         initVars()
         getPermissions()
-        btnTurnOnBlutooth.setOnClickListener { setupBluetooth() }
-        btnStartScan.setOnClickListener {
-            enableDiscoverablity()
-//            startScan()
-            mBluetoothAdapter?.startDiscovery()
-
-        }
-        btnStopScan.setOnClickListener { stopScan() }
-
+        setClicks()
 
         switchServer.setOnCheckedChangeListener { button, isChecked ->
             connectAsServer = isChecked
@@ -90,6 +82,21 @@ class MainActivity : BleBaseActivity(),MainActivityPresenter.PresenterCallback {
         }
 
         switchServer.isChecked = true
+
+
+
+//        createConnection()
+    }
+
+    override fun setClicks() {
+        btnTurnOnBlutooth.setOnClickListener { setupBluetooth() }
+        btnStartScan.setOnClickListener {
+            enableDiscoverablity()
+//            startScan()
+            mBluetoothAdapter?.startDiscovery()
+
+        }
+        btnStopScan.setOnClickListener { stopScan() }
 
         btnStartServer.setOnClickListener {
             bg {
@@ -113,7 +120,7 @@ class MainActivity : BleBaseActivity(),MainActivityPresenter.PresenterCallback {
             updateSelectedClient()
         }
 
-//        createConnection()
+        btnBleActivity.setOnClickListener{ startActivity(Intent(this,MyBleActivity::class.java))}
     }
 
 

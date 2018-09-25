@@ -10,12 +10,10 @@ class MyBleActivity : BleBaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_my_ble)
-
-        setClicks()
+        setContentView(R.layout.activity_main)
     }
 
-    fun setClicks(){
+    override fun setClicks(){
         btnTurnOnBlutooth.setOnClickListener { setupBluetooth() }
         btnStartScan.setOnClickListener { startScan() }
     }
