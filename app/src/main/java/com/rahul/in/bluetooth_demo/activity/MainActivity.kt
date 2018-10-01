@@ -1,7 +1,6 @@
-package com.rahul.`in`.bluetooth_demo
+package com.rahul.`in`.bluetooth_demo.activity
 
 import android.Manifest
-import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothServerSocket
@@ -11,19 +10,16 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.LinearLayout
-import android.widget.Toast
-import com.polidea.rxandroidble2.RxBleClient
 import com.polidea.rxandroidble2.scan.ScanFilter
 import com.polidea.rxandroidble2.scan.ScanSettings
+import com.rahul.`in`.bluetooth_demo.MainActivityPresenter
+import com.rahul.`in`.bluetooth_demo.R
 import com.tbruyelle.rxpermissions2.RxPermissions
 import io.reactivex.Flowable
-import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
 import org.jetbrains.anko.coroutines.experimental.bg
@@ -31,7 +27,7 @@ import org.jetbrains.anko.sdk25.coroutines.onCheckedChange
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-class MainActivity : BleBaseActivity(),MainActivityPresenter.PresenterCallback {
+class MainActivity : BleBaseActivity(), MainActivityPresenter.PresenterCallback {
     override fun printInScreen(msg: String?) {
         printLogInScreen(msg!!)
     }
@@ -120,7 +116,7 @@ class MainActivity : BleBaseActivity(),MainActivityPresenter.PresenterCallback {
             updateSelectedClient()
         }
 
-        btnBleActivity.setOnClickListener{ startActivity(Intent(this,MyBleActivity::class.java))}
+        btnBleActivity.setOnClickListener{ startActivity(Intent(this, MyBleActivity::class.java))}
     }
 
 

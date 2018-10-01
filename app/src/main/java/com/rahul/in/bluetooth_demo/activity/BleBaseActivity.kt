@@ -1,4 +1,4 @@
-package com.rahul.`in`.bluetooth_demo
+package com.rahul.`in`.bluetooth_demo.activity
 
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
@@ -8,6 +8,7 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.widget.Toast
 import com.polidea.rxandroidble2.RxBleClient
+import com.rahul.`in`.bluetooth_demo.App
 import io.reactivex.disposables.Disposable
 import java.util.*
 

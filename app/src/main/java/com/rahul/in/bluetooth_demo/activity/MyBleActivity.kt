@@ -1,9 +1,9 @@
-package com.rahul.`in`.bluetooth_demo
+package com.rahul.`in`.bluetooth_demo.activity
 
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import com.polidea.rxandroidble2.scan.ScanFilter
 import com.polidea.rxandroidble2.scan.ScanSettings
+import com.rahul.`in`.bluetooth_demo.R
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MyBleActivity : BleBaseActivity() {
