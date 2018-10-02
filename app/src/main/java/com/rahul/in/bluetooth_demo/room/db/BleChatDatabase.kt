@@ -5,17 +5,17 @@ import android.arch.persistence.room.Database
 import android.arch.persistence.room.Room
 import android.arch.persistence.room.RoomDatabase
 import android.content.Context
-import com.rahul.`in`.bluetooth_demo.room.dao.MessageDao
-import com.rahul.`in`.bluetooth_demo.room.entity.Message
+import com.rahul.`in`.bluetooth_demo.room.dao.BleMessageDao
+import com.rahul.`in`.bluetooth_demo.room.entity.BleMessage
 import kotlinx.coroutines.experimental.CoroutineScope
 import kotlinx.coroutines.experimental.Dispatchers
 import kotlinx.coroutines.experimental.IO
 import kotlinx.coroutines.experimental.launch
 
-@Database(entities = arrayOf(Message::class), version = 1)
+@Database(entities = arrayOf(BleMessage::class), version = 1)
 public abstract class BleChatDatabase : RoomDatabase() {
 
-    abstract fun messageDao(): MessageDao
+    abstract fun messageDao(): BleMessageDao
 
     companion object {
         @Volatile
@@ -49,8 +49,8 @@ public abstract class BleChatDatabase : RoomDatabase() {
                 }
             }
         }
-        fun populateDatabase(messageDao: MessageDao) {
-//            messageDao.deleteAll()
+        fun populateDatabase(bleMessageDao: BleMessageDao) {
+//            bleMessageDao.deleteAll()
 //            var word = Word("Hello")
 //            wordDao.insert(word)
 //            word = Word("World!")

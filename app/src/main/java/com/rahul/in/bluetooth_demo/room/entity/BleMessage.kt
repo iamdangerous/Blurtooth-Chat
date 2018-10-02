@@ -5,8 +5,8 @@ import android.arch.persistence.room.Entity
 import android.arch.persistence.room.PrimaryKey
 import android.text.TextUtils
 
-@Entity(tableName = "message")
-data class Message(
+@Entity(tableName = "ble_message")
+data class BleMessage(
         @PrimaryKey @ColumnInfo(name = "messageId") val messageId: String,
         @ColumnInfo(name = "createdAtTime") val createdAtTime: String,
         @ColumnInfo(name = "to") var to: String,

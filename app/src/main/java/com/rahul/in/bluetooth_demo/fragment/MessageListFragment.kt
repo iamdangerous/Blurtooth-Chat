@@ -1,14 +1,35 @@
 package com.rahul.`in`.bluetooth_demo.fragment
 
-import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.arch.lifecycle.Observer
+import android.arch.lifecycle.ViewModelProviders
+import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
+import com.rahul.`in`.bluetooth_demo.R
+import com.rahul.`in`.bluetooth_demo.adapter.MessageListAdapter
+import com.rahul.`in`.bluetooth_demo.room.entity.BleMessage
+import com.rahul.`in`.bluetooth_demo.viewModel.BleMessageListViewModel
 
-class MessageListFragment:Fragment(){
+class MessageListFragment : BaseFragment() {
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return super.onCreateView(inflater, container, savedInstanceState)
+    lateinit var rvMessages: RecyclerView
+    lateinit var rvAdapter: MessageListAdapter
+    val messages = arrayListOf<BleMessage>()
+
+    private lateinit var bleMessageVM: BleMessageListViewModel
+
+    override fun setupViews() {
+        super.setupViews()
+        rvMessages = rootView.findViewById(R.id.rv_message)
+        rvMessages.layoutManager = LinearLayoutManager(activity)
+        rvAdapter = MessageListAdapter(messages)
+        rvMessages.adapter = rvAdapter
+
+        bleMessageVM = ViewModelProviders.of(this).get(BleMessageListViewModel::class.java)
+
+        bleMessageVM.allBleMessages.observe(this, Observer {
+            messages -> messages?.let { rvAdapter.setData(messages) }
+        })
+
+
     }
 }

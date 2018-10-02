@@ -7,7 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import com.rahul.`in`.bluetooth_demo.R
 
-class BaseFragment:Fragment(){
+open class BaseFragment:Fragment(){
 
     fun getLayout() = R.layout.fragment_base
     lateinit var rootView:View
@@ -17,7 +17,7 @@ class BaseFragment:Fragment(){
         return rootView
     }
 
-    protected fun setupViews(){
+    open fun setupViews(){
 
     }
 }

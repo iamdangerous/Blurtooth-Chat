@@ -30,7 +30,8 @@
             </intent-filter>
         </activity>
         <activity android:name=".activity.MyBleActivity" />
-        <activity android:name=".activity.MessageListActivity"></activity>
+        <activity android:name=".activity.MessageListActivity" />
+        <activity android:name=".activity.BleChatActivity"></activity>
     </application>
 
 </manifest>
