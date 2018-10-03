@@ -1,8 +1,8 @@
 package com.rahul.`in`.bluetooth_demo.room.entity
 
-import android.arch.persistence.room.ColumnInfo
-import android.arch.persistence.room.Entity
-import android.arch.persistence.room.PrimaryKey
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import android.text.TextUtils
 
 @Entity(tableName = "ble_message")
@@ -15,7 +15,9 @@ data class BleMessage(
         @ColumnInfo(name = "from") var from: String,
         @ColumnInfo(name = "receiverId") var receiverId: String,
         @ColumnInfo(name = "isRead") var isRead: Boolean,
-        @ColumnInfo(name = "isSent") var isSent: Boolean
+        @ColumnInfo(name = "isSent") var isSent: Boolean,
+        @ColumnInfo(name = "otherId") var otherId: String,
+        @ColumnInfo(name = "otherIdType") var otherIdType: Int
         )
 {
         fun isOutbox() = (TextUtils.isEmpty(senderId))

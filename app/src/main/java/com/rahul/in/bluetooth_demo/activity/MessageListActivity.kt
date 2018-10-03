@@ -1,6 +1,6 @@
 package com.rahul.`in`.bluetooth_demo.activity
 
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import com.rahul.`in`.bluetooth_demo.R
 import com.rahul.`in`.bluetooth_demo.fragment.MessageListFragment

@@ -1,3 +1,5 @@
 package com.rahul.`in`.bluetooth_demo.model
 
-data class BleChatMessage(val bleChatMessage: BleChatMessage)
+import com.rahul.`in`.bluetooth_demo.room.entity.BleMessage
+
+data class BleChatMessage(val bleMessage: BleMessage)

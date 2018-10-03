@@ -1,9 +1,9 @@
 package com.rahul.`in`.bluetooth_demo.fragment
 
-import android.arch.lifecycle.Observer
-import android.arch.lifecycle.ViewModelProviders
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProviders
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.rahul.`in`.bluetooth_demo.R
 import com.rahul.`in`.bluetooth_demo.adapter.MessageListAdapter
 import com.rahul.`in`.bluetooth_demo.room.entity.BleMessage

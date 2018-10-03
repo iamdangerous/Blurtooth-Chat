@@ -1,11 +1,11 @@
 package com.rahul.`in`.bluetooth_demo.repository
 
-import android.arch.lifecycle.LiveData
-import android.support.annotation.WorkerThread
+import androidx.lifecycle.LiveData
+import androidx.annotation.WorkerThread
 import com.rahul.`in`.bluetooth_demo.room.dao.BleMessageDao
 import com.rahul.`in`.bluetooth_demo.room.entity.BleMessage
 
-class BleMessageRepository(private val bleMessageDao: BleMessageDao){
+open class BleMessageRepository(private val bleMessageDao: BleMessageDao){
 
     val allMessages: LiveData<ArrayList<BleMessage>> = bleMessageDao.getAllMessages()
 
