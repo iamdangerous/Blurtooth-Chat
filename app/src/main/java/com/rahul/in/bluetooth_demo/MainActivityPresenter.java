@@ -21,7 +21,7 @@ import java.util.List;
 
 public class MainActivityPresenter {
 
-    PresenterCallback callback;
+    public PresenterCallback callback;
 
     public void readData(BluetoothSocket bluetoothSocket) {
         try {

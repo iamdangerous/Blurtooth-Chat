@@ -14,11 +14,11 @@ def stethoVersion = '1.5.0'
 def playServiceVersion = '15.0.1'
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 28
     defaultConfig {
         applicationId "com.rahul.in.bluetooth_demo"
         minSdkVersion 21
-        targetSdkVersion 27
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
