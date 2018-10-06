@@ -15,15 +15,30 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_message"
         android:layout_below="@+id/toolbar"
-        android:layout_above="@+id/et_msg"
+        android:layout_above="@+id/rl_msg"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
-    <EditText
-        android:id="@+id/et_msg"
+    <LinearLayout
+        android:orientation="horizontal"
+        android:id="@+id/rl_msg"
         android:layout_alignParentBottom="true"
-        android:hint="type here"
         android:layout_width="match_parent"
-        android:layout_height="60dp" />
+        android:layout_height="wrap_content">
+
+        <EditText
+            android:layout_weight="1"
+            android:id="@+id/et_msg"
+            android:hint="type here"
+            android:layout_width="0dp"
+            android:layout_height="60dp" />
+
+        <Button
+            android:id="@+id/btnSend"
+            android:text="Send"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
 
 </RelativeLayout>
