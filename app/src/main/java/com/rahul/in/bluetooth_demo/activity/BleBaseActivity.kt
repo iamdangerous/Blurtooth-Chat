@@ -72,8 +72,11 @@ open class BleBaseActivity : AppCompatActivity() {
         }
     }
 
-    open fun enableDiscoverablity(){
-        //Do nothiing
 
+    open fun enableDiscoverablity(){
+        printLogInScreen("enable discover mode")
+        val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+        discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 3600)
+        startActivity(discoverableIntent)
     }
 }

@@ -54,6 +54,12 @@ class MainActivity : BleBaseActivity(), MainActivityPresenter.PresenterCallback 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        if(true){
+            startActivity(Intent(this,BleMeshActivity::class.java))
+            finish()
+            return
+        }
+
         //Register broadcast receiver when a device is discovered
         val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
         registerReceiver(mReceiver, filter)
@@ -338,7 +344,8 @@ class MainActivity : BleBaseActivity(), MainActivityPresenter.PresenterCallback 
 
     override fun onDestroy() {
         super.onDestroy()
-        unregisterReceiver(mReceiver)
+//        if(mReceiver!=null )
+//        unregisterReceiver(mReceiver)
     }
 
     fun createConnection() {
