@@ -1,6 +1,7 @@
 package com.rahul.`in`.bluetooth_demo.activity
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothServerSocket
@@ -14,6 +15,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.LinearLayout
+import androidx.fragment.app.FragmentActivity
 import com.polidea.rxandroidble2.scan.ScanFilter
 import com.polidea.rxandroidble2.scan.ScanSettings
 import com.rahul.`in`.bluetooth_demo.MainActivityPresenter
@@ -157,7 +159,7 @@ class MainActivity : BleBaseActivity(), MainActivityPresenter.PresenterCallback 
         }
 
         try {
-            bluetoothSocket = device!!.createInsecureRfcommSocketToServiceRecord(uuid)
+            bluetoothSocket = device.createInsecureRfcommSocketToServiceRecord(uuid)
 
 //                mBluetoothAdapter!!.cancelDiscovery()
             bluetoothSocket!!.connect() //blocking call
@@ -173,7 +175,7 @@ class MainActivity : BleBaseActivity(), MainActivityPresenter.PresenterCallback 
         } catch (e: Exception) {
             e.printStackTrace()
             runOnUiThread {
-                printLogInScreen("client - exception device - ${device!!.address}")
+                printLogInScreen("client - exception device - ${device.address}")
                 printLogInScreen(e.localizedMessage)
             }
 
@@ -267,7 +269,8 @@ class MainActivity : BleBaseActivity(), MainActivityPresenter.PresenterCallback 
                 Manifest.permission.BLUETOOTH_ADMIN,
                 Manifest.permission.READ_PHONE_STATE
         )
-                .subscribe { _ -> }
+
+//                .subscribe { _ -> }
     }
 
 
@@ -339,10 +342,6 @@ class MainActivity : BleBaseActivity(), MainActivityPresenter.PresenterCallback 
     }
 
     fun createConnection() {
-
-        fun manageSocket(bluetoothSocket: BluetoothSocket) {
-
-        }
 
         val scheduler = Schedulers.newThread()
         Flowable.interval(10, TimeUnit.SECONDS)

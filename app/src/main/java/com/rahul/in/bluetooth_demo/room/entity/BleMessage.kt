@@ -15,13 +15,14 @@ data class BleMessage(
         @ColumnInfo(name = "isRead") var isRead: Boolean,
         @ColumnInfo(name = "isSent") var isSent: Boolean,
         @ColumnInfo(name = "otherId") var otherId: String,
+        @ColumnInfo(name = "otherName") var otherName: String,
         @ColumnInfo(name = "otherIdType") var otherIdType: Int = 0,
         @PrimaryKey(autoGenerate = true) @ColumnInfo(name = "messageId") val messageId: String = "0"
 ) {
     fun isOutbox() = (TextUtils.isEmpty(senderId))
 
     companion object {
-        fun createSendingMessage(text:String, receiverId:String) :BleMessage {
+        fun createSendingMessage(text:String, receiverId:String, otherName: String) :BleMessage {
             val createdAtTime = TimeUtil.getCurrentUTCTimestamp()
             val ownerId = "Rahul"
             val senderEmail = "Rahul@gmail.com"
@@ -31,7 +32,8 @@ data class BleMessage(
                     receiverId = receiverId,
                     isRead = true,
                     isSent = false,
-                    otherId = receiverId
+                    otherId = receiverId,
+                    otherName = otherName
             )
         }
     }

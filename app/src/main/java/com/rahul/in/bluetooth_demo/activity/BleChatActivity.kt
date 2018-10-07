@@ -16,6 +16,7 @@ class BleChatActivity : AppCompatActivity() {
     lateinit var rvAdapter: BleChatAdapter
     lateinit var bleChatViewModel: BleChatViewModel
     lateinit var otherId: String
+    lateinit var otherName: String
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_ble_chat)
@@ -31,9 +32,10 @@ class BleChatActivity : AppCompatActivity() {
 
     fun prepareDataFromIntent() {
         otherId = "Ron"
+        otherName = "HarryPotter"
     }
 
-    fun prepareBleMessage(text: String) = BleMessage.createSendingMessage(text, otherId)
+    fun prepareBleMessage(text: String) = BleMessage.createSendingMessage(text, otherId, otherName)
 
     fun sendMessage(msg: BleMessage) {
 

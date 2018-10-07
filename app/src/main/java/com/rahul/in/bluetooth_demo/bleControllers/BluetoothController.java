@@ -1,4 +1,4 @@
-package com.rahul.in.bluetooth_demo;
+package com.rahul.in.bluetooth_demo.bleControllers;
 
 import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
