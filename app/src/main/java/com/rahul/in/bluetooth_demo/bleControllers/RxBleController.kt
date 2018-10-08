@@ -59,7 +59,8 @@ class RxBleController (rxPermissions: RxPermissions, context: Context, mBluetoot
         if(!bleDevicesSet.contains(scanResult.bleDevice)){
             bleDevicesSet.add(scanResult.bleDevice)
             callback?.print("New device added")
-            connectRxBle(scanResult.bleDevice)
+            callback?.onDeviceAdded(true, scanResult.bleDevice)
+
         }
     }
 
@@ -75,9 +76,9 @@ class RxBleController (rxPermissions: RxPermissions, context: Context, mBluetoot
                     .observeOn(AndroidSchedulers.mainThread())
                     .doFinally{dispose()}
                     .subscribe({
-                        callback?.print("Connection success")
+                        callback?.print("Connection success with ${rxBleDevice.name}")
                     },{
-                        callback?.print("Connection Error")
+                        callback?.print("Connection Error with ${rxBleDevice.name}")
                     });
         }
     }
@@ -92,5 +93,6 @@ class RxBleController (rxPermissions: RxPermissions, context: Context, mBluetoot
 
     interface RxBleControllerCallback{
         fun print(message:String)
+        fun onDeviceAdded(added: Boolean, bleDevice: RxBleDevice)
     }
 }

@@ -1,12 +1,11 @@
 package com.rahul.`in`.bluetooth_demo.activity
 
-import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.util.Log
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import com.polidea.rxandroidble2.RxBleClient
 import com.rahul.`in`.bluetooth_demo.App
 import io.reactivex.disposables.Disposable
@@ -66,7 +65,7 @@ open class BleBaseActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_ENABLE_BT) {
-            if (resultCode == Activity.RESULT_OK) {
+            if (resultCode == AppCompatActivity.RESULT_OK) {
                 enableDiscoverablity()
             }
         }

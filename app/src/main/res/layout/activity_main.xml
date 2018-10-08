@@ -120,6 +120,10 @@
                 android:text="Read data" />
 
         </LinearLayout>
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_devices"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
 
         <ScrollView
             android:layout_width="match_parent"
@@ -131,6 +135,7 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif"
                 android:text="LOGG" />
+
         </ScrollView>
 
 

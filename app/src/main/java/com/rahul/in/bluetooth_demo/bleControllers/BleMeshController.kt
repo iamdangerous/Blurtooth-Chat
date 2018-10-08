@@ -52,7 +52,13 @@ class BleMeshController(rxPermissions: RxPermissions, context: Context, mBluetoo
         mScanCallback = BtleScanCallback()
         mBluetoothLeScanner = mBluetoothAdapter.bluetoothLeScanner
 //        mBluetoothLeScanner!!.startScan(filters, settings, mScanCallback)
-        mBluetoothLeScanner?.startScan(mScanCallback)
+//        mBluetoothLeScanner?.startScan(mScanCallback)
+        mBluetoothAdapter?.startLeScan(object :BluetoothAdapter.LeScanCallback{
+            override fun onLeScan(p0: BluetoothDevice?, p1: Int, p2: ByteArray?) {
+                callback?.print("onLeScan")
+            }
+
+        })
 
         mScanning = true
     }
