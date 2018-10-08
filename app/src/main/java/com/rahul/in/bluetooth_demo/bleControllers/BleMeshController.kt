@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import android.os.ParcelUuid
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.polidea.rxandroidble2.RxBleDevice
 import com.tbruyelle.rxpermissions2.RxPermissions
 import timber.log.Timber
 import java.io.UnsupportedEncodingException
@@ -17,6 +18,7 @@ import java.nio.charset.Charset
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
+import kotlin.collections.HashSet
 
 
 class BleMeshController(rxPermissions: RxPermissions, context: Context, mBluetoothManager: BluetoothManager, mBluetoothAdapter: BluetoothAdapter) : BaseBleController(rxPermissions,context,mBluetoothManager,mBluetoothAdapter){
@@ -36,6 +38,7 @@ class BleMeshController(rxPermissions: RxPermissions, context: Context, mBluetoo
     val mGattMap = HashMap<BluetoothDevice, BluetoothGatt>()
     var mConnectedMap = HashMap<BluetoothGatt, Boolean>()
     val mDevices: ArrayList<BluetoothDevice> = ArrayList()
+    val mScannedDevices = HashSet<BluetoothDevice>()
     var callback: BleMeshControllerCallback? = null
 
 
@@ -53,19 +56,22 @@ class BleMeshController(rxPermissions: RxPermissions, context: Context, mBluetoo
         mBluetoothLeScanner = mBluetoothAdapter.bluetoothLeScanner
 //        mBluetoothLeScanner!!.startScan(filters, settings, mScanCallback)
 //        mBluetoothLeScanner?.startScan(mScanCallback)
-        mBluetoothAdapter?.startLeScan(object :BluetoothAdapter.LeScanCallback{
-            override fun onLeScan(p0: BluetoothDevice?, p1: Int, p2: ByteArray?) {
-                callback?.print("onLeScan")
+        mBluetoothAdapter?.startLeScan { device, rssi, scanRecord ->
+            device?.apply {
+                if(!mScannedDevices.contains(this)){
+                    mScannedDevices.add(this)
+                    callback?.print("onLeScan")
+                    callback?.onDeviceAdded(true, this)
+                }
             }
-
-        })
+        }
 
         mScanning = true
     }
 
     fun stopScan() {
         if (mScanning && mBluetoothAdapter != null && mBluetoothAdapter.isEnabled() && mBluetoothLeScanner != null) {
-            mBluetoothLeScanner!!.stopScan(mScanCallback);
+            mBluetoothLeScanner!!.stopScan(mScanCallback)
 //            scanComplete();
         }
 
@@ -279,6 +285,8 @@ class BleMeshController(rxPermissions: RxPermissions, context: Context, mBluetoo
 
     interface BleMeshControllerCallback{
         fun print(message:String)
+        fun onDeviceAdded(added: Boolean, bleDevice: BluetoothDevice)
+        fun onConnectionUpdated(connectedBleDevicesSet: HashSet<BluetoothDevice>)
     }
 
 

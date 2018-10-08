@@ -19,6 +19,7 @@ class RxBleController (rxPermissions: RxPermissions, context: Context, mBluetoot
     private var scanDisposable: Disposable? = null
     val rxBleClient :RxBleClient
     val bleDevicesSet = HashSet<RxBleDevice>()
+    val connectedBleDevicesSet = HashSet<RxBleDevice>()
     var callback:RxBleControllerCallback? = null
     init {
         rxBleClient = (context.applicationContext as App).rxBleClient
@@ -77,9 +78,13 @@ class RxBleController (rxPermissions: RxPermissions, context: Context, mBluetoot
                     .doFinally{dispose()}
                     .subscribe({
                         callback?.print("Connection success with ${rxBleDevice.name}")
+                        connectedBleDevicesSet.add(rxBleDevice)
+                        callback?.onConnectionUpdated(connectedBleDevicesSet)
                     },{
                         callback?.print("Connection Error with ${rxBleDevice.name}")
-                    });
+                        connectedBleDevicesSet.remove(rxBleDevice)
+                        callback?.onConnectionUpdated(connectedBleDevicesSet)
+                    })
         }
     }
 
@@ -94,5 +99,6 @@ class RxBleController (rxPermissions: RxPermissions, context: Context, mBluetoot
     interface RxBleControllerCallback{
         fun print(message:String)
         fun onDeviceAdded(added: Boolean, bleDevice: RxBleDevice)
+        fun onConnectionUpdated(connectedBleDevicesSet: HashSet<RxBleDevice>)
     }
 }

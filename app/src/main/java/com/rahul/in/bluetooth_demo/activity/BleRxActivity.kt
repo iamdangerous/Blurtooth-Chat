@@ -3,7 +3,6 @@ package com.rahul.`in`.bluetooth_demo.activity
 import android.bluetooth.BluetoothAdapter
 import android.os.Bundle
 import com.rahul.`in`.bluetooth_demo.R
-import com.rahul.`in`.bluetooth_demo.bleControllers.BleMeshController
 import com.tbruyelle.rxpermissions2.RxPermissions
 import android.bluetooth.BluetoothManager
 import android.content.Context
@@ -12,20 +11,18 @@ import android.widget.Button
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.polidea.rxandroidble2.RxBleDevice
-import com.rahul.`in`.bluetooth_demo.activity.BleBaseActivity
-import com.rahul.`in`.bluetooth_demo.adapter.BleDevicesAdapter
+import com.rahul.`in`.bluetooth_demo.adapter.RxBleDevicesAdapter
 import com.rahul.`in`.bluetooth_demo.bleControllers.RxBleController
 import kotlinx.android.synthetic.main.activity_main.*
 
 
 class BleRxActivity : BleBaseActivity(), RxBleController.RxBleControllerCallback {
 
-
     lateinit var btnTurnOnBlutooth:Button
     lateinit var btnStartScan:Button
     var bleController:RxBleController? = null
     lateinit var rvDevices:RecyclerView
-    lateinit var devicesAdapter:BleDevicesAdapter
+    lateinit var devicesAdapterRx:RxBleDevicesAdapter
     val bleDevices = ArrayList<RxBleDevice>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,9 +36,9 @@ class BleRxActivity : BleBaseActivity(), RxBleController.RxBleControllerCallback
         rvDevices.layoutManager = LinearLayoutManager(this)
 
 
-        devicesAdapter = BleDevicesAdapter(bleDevices)
+        devicesAdapterRx = RxBleDevicesAdapter(bleDevices)
 
-        devicesAdapter.callback = object :BleDevicesAdapter.BleAdapterCallback{
+        devicesAdapterRx.callback = object :RxBleDevicesAdapter.BleAdapterCallback{
             override fun onItemClick(bleDevice: RxBleDevice) {
                 //connect
                 printLogInScreen("Connecting with with ${bleDevice.name}")
@@ -50,7 +47,7 @@ class BleRxActivity : BleBaseActivity(), RxBleController.RxBleControllerCallback
 
         }
 
-        rvDevices.adapter = devicesAdapter
+        rvDevices.adapter = devicesAdapterRx
         setClicks()
 
     }
@@ -72,9 +69,13 @@ class BleRxActivity : BleBaseActivity(), RxBleController.RxBleControllerCallback
 
     override fun onDeviceAdded(added: Boolean, bleDevice: RxBleDevice) {
         bleDevices.add(bleDevice)
-        devicesAdapter.connectedDevices.clear()
-        devicesAdapter.connectedDevices.addAll(bleController!!.bleDevicesSet)
-        devicesAdapter.notifyDataSetChanged()
+        devicesAdapterRx.notifyDataSetChanged()
+    }
+
+    override fun onConnectionUpdated(connectedBleDevicesSet: HashSet<RxBleDevice>) {
+        devicesAdapterRx.connectedDevices.clear()
+        devicesAdapterRx.connectedDevices.addAll(connectedBleDevicesSet)
+        devicesAdapterRx.notifyDataSetChanged()
     }
 
     override fun print(message: String) {

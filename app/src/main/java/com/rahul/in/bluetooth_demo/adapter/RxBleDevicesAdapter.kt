@@ -9,7 +9,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.polidea.rxandroidble2.RxBleDevice
 import com.rahul.`in`.bluetooth_demo.R
 
-class BleDevicesAdapter(val devices:ArrayList<RxBleDevice>) :RecyclerView.Adapter<RecyclerView.ViewHolder>(){
+class RxBleDevicesAdapter(val devices: ArrayList<RxBleDevice>) :RecyclerView.Adapter<RecyclerView.ViewHolder>(){
+
 
     var callback:BleAdapterCallback? = null
     val connectedDevices = HashSet<RxBleDevice>()
@@ -34,7 +35,7 @@ class BleDevicesAdapter(val devices:ArrayList<RxBleDevice>) :RecyclerView.Adapte
         }
     }
 
-    inner class BleViewHolder(itemView: View):RecyclerView.ViewHolder(itemView){
+    public class BleViewHolder(itemView: View):RecyclerView.ViewHolder(itemView){
         val tvTitle:TextView = itemView.findViewById(R.id.tvTitle)
         val btnConnect:Button = itemView.findViewById(R.id.btnConnect)
     }
