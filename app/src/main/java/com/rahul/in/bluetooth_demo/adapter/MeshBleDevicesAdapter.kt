@@ -26,6 +26,7 @@ class MeshBleDevicesAdapter(val devices : ArrayList<BluetoothDevice>) :RecyclerV
         }else{
             vh.btnConnect.text = "Connect"
         }
+        vh.btnSendMessage.setOnClickListener{callback?.onSendMessage(device)}
     }
 
     override fun getItemCount(): Int {
@@ -34,6 +35,7 @@ class MeshBleDevicesAdapter(val devices : ArrayList<BluetoothDevice>) :RecyclerV
 
     interface BleAdapterCallback{
         fun onItemClick(bleDevice: BluetoothDevice)
+        fun onSendMessage(bleDevice: BluetoothDevice)
     }
 
 }

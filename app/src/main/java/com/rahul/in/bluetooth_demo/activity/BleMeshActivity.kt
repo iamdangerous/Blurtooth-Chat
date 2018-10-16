@@ -19,6 +19,7 @@ import java.util.HashSet
 
 class BleMeshActivity : BleBaseActivity(), BleMeshController.BleMeshControllerCallback {
 
+
     lateinit var btnTurnOnBlutooth:Button
     lateinit var btnStartScan:Button
     var bleMeshController:BleMeshController? = null
@@ -40,9 +41,13 @@ class BleMeshActivity : BleBaseActivity(), BleMeshController.BleMeshControllerCa
         devicesAdapter = MeshBleDevicesAdapter(bleDevices)
 
         devicesAdapter.callback = object : MeshBleDevicesAdapter.BleAdapterCallback {
+            override fun onSendMessage(bleDevice: BluetoothDevice) {
+                bleMeshController?.sendMessage(bleDevice)
+            }
+
             override fun onItemClick(bleDevice: BluetoothDevice) {
-//                printLogInScreen("Connecting with with ${bleDevice.name}")
-//                bleMeshController?.connectRxBle(bleDevice)
+                printLogInScreen("Connecting with with ${bleDevice.name}")
+                bleMeshController?.connectDevice(bleDevice)
             }
         }
 
@@ -73,6 +78,12 @@ class BleMeshActivity : BleBaseActivity(), BleMeshController.BleMeshControllerCa
 
     override fun onConnectionUpdated(connectedBleDevicesSet: HashSet<BluetoothDevice>) {
 
+    }
+
+    override fun onScanStarted(scanStarted: Boolean) {
+        rvDevices.postDelayed({
+            bleMeshController?.onResume()
+        }, 2000)
     }
 
     override fun print(message: String) {

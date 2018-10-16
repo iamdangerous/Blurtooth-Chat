@@ -38,6 +38,7 @@ class RxBleDevicesAdapter(val devices: ArrayList<RxBleDevice>) :RecyclerView.Ada
     public class BleViewHolder(itemView: View):RecyclerView.ViewHolder(itemView){
         val tvTitle:TextView = itemView.findViewById(R.id.tvTitle)
         val btnConnect:Button = itemView.findViewById(R.id.btnConnect)
+        val btnSendMessage:Button = itemView.findViewById(R.id.btnSendMessage)
     }
 
     interface BleAdapterCallback{
