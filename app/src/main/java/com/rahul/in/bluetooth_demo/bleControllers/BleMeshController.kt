@@ -1,6 +1,7 @@
 package com.rahul.`in`.bluetooth_demo.bleControllers
 
 import android.bluetooth.*
+import android.bluetooth.BluetoothGatt.GATT_SUCCESS
 import android.bluetooth.le.*
 import android.content.Context
 import android.os.ParcelUuid
@@ -12,12 +13,6 @@ import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
-import android.bluetooth.BluetoothGatt.GATT_SUCCESS
-import android.bluetooth.BluetoothGattCharacteristic
-
-
-
-
 
 
 class BleMeshController(rxPermissions: RxPermissions, context: Context, mBluetoothManager: BluetoothManager, mBluetoothAdapter: BluetoothAdapter) : BaseBleController(rxPermissions, context, mBluetoothManager, mBluetoothAdapter) {
@@ -56,31 +51,13 @@ class BleMeshController(rxPermissions: RxPermissions, context: Context, mBluetoo
         val settings = ScanSettings.Builder()
                 .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
                 .build()
+        filters.add(ScanFilter.Builder()
+                .setServiceUuid(ParcelUuid(SERVICE_UUID))
+                .build())
 
         mScanCallback = BtleScanCallback()
         mBluetoothLeScanner = mBluetoothAdapter.bluetoothLeScanner
-//        mBluetoothLeScanner!!.startScan(filters, settings, mScanCallback)
-//        mBluetoothLeScanner?.startScan(mScanCallback)
-        mBluetoothAdapter?.startLeScan { device, rssi, scanRecord ->
-            device?.apply {
-                if (!mScannedDevices.contains(this)) {
-                    val skipBleDevices = arrayListOf<String>(
-                            "51:8D:28:74:99:B1",
-                            "5D:FB:21:F4:19:3A",
-                            "30:35:AD:C5:DC:DD",
-                            "15:16:E4:0C:15:61",
-                            "15:16:E4:0C:15:61",
-                            "REFLEX_FD41D15FB3D6"
-                    )
-                    if (skipBleDevices.contains(device.address)) {
-                        return@apply
-                    }
-                    mScannedDevices.add(this)
-                    callback?.print("onLeScan")
-                    callback?.onDeviceAdded(true, this)
-                }
-            }
-        }
+        mBluetoothLeScanner!!.startScan(filters, settings, mScanCallback)
 
         mScanning = true
         callback?.onScanStarted(mScanning)
@@ -237,8 +214,25 @@ class BleMeshController(rxPermissions: RxPermissions, context: Context, mBluetoo
             callback?.print("addScanResult")
             val device = result.getDevice()
             val deviceAddress = device.getAddress()
-            mScanResults[deviceAddress] = device
-            connectDevice(device)
+//            mScanResults[deviceAddress] = device
+//            connectDevice(device)
+
+            if (!mScannedDevices.contains(device)) {
+                    val skipBleDevices = arrayListOf<String>(
+                            "51:8D:28:74:99:B1",
+                            "5D:FB:21:F4:19:3A",
+                            "30:35:AD:C5:DC:DD",
+                            "15:16:E4:0C:15:61",
+                            "15:16:E4:0C:15:61",
+                            "REFLEX_FD41D15FB3D6"
+                    )
+                    if (skipBleDevices.contains(device.address)) {
+                        return
+                    }
+                    mScannedDevices.add(device)
+                    callback?.print("onLeScan")
+                    callback?.onDeviceAdded(true, device)
+                }
         }
     }
 
