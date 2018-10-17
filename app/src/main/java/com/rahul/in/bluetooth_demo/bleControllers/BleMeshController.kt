@@ -4,6 +4,7 @@ import android.bluetooth.*
 import android.bluetooth.BluetoothGatt.GATT_SUCCESS
 import android.bluetooth.le.*
 import android.content.Context
+import android.os.Handler
 import android.os.ParcelUuid
 import com.tbruyelle.rxpermissions2.RxPermissions
 import timber.log.Timber
@@ -15,7 +16,7 @@ import kotlin.collections.HashMap
 import kotlin.collections.HashSet
 
 
-class BleMeshController(rxPermissions: RxPermissions, context: Context, mBluetoothManager: BluetoothManager, mBluetoothAdapter: BluetoothAdapter) : BaseBleController(rxPermissions, context, mBluetoothManager, mBluetoothAdapter) {
+class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, mBluetoothAdapter: BluetoothAdapter) : BaseBleController(context, mBluetoothManager, mBluetoothAdapter) {
 
     var hasPermissions = false
 
@@ -27,7 +28,6 @@ class BleMeshController(rxPermissions: RxPermissions, context: Context, mBluetoo
     val CHARACTERISTIC_UUID = UUID.fromString(CHARACTERISTIC_ID)
     val DESCRIPTOR_UUID = UUID.fromString(DESCRIPTOR_ID)
     var mScanCallback: ScanCallback? = null
-    val mScanResults = HashMap<String, BluetoothDevice>()
     var mBluetoothLeScanner: BluetoothLeScanner? = null
     var mBluetoothLeAdvertiser: BluetoothLeAdvertiser? = null;
     var mGattServer: BluetoothGattServer? = null
@@ -232,6 +232,7 @@ class BleMeshController(rxPermissions: RxPermissions, context: Context, mBluetoo
                     mScannedDevices.add(device)
                     callback?.print("onLeScan")
                     callback?.onDeviceAdded(true, device)
+                    Handler().postDelayed({ connectDevice(device)}, 1000)
                 }
         }
     }
@@ -285,12 +286,6 @@ class BleMeshController(rxPermissions: RxPermissions, context: Context, mBluetoo
                 callback?.print("Client CalonDescriptorWrite: Error writing GATT Descriptor: " + status);
             }
 
-//            val characteristic = gatt
-//                    ?.getService(SERVICE_UUID)
-//                    ?.getCharacteristic(CHARACTERISTIC_UUID)
-//            val sucessReadChar = gatt?.readCharacteristic(characteristic)
-//            callback?.print("sucessReadChar = $sucessReadChar")
-
         }
 
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
@@ -300,14 +295,14 @@ class BleMeshController(rxPermissions: RxPermissions, context: Context, mBluetoo
                 disconnectGattServer(gatt)
                 return
             } else if (status != BluetoothGatt.GATT_SUCCESS) {
-                disconnectGattServer(gatt)
+                disconnectGattServer(gatt, true)
                 return
             }
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 mConnectedMap[gatt] = true
                 gatt.discoverServices()
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                disconnectGattServer(gatt)
+                disconnectGattServer(gatt, true)
             }
         }
 
@@ -385,10 +380,18 @@ class BleMeshController(rxPermissions: RxPermissions, context: Context, mBluetoo
         }
     }
 
-    fun disconnectGattServer(gatt: BluetoothGatt) {
+    fun disconnectGattServer(gatt: BluetoothGatt, retry:Boolean = false) {
+        Timber.d("disconnectGattServer")
+        callback?.print("disconnectGattServer")
         mConnectedMap[gatt] = false
-        gatt.disconnect()
-        gatt.close()
+        if(retry ){
+            Timber.d("Reconnecting!!")
+            gatt.connect()
+        }else {
+            gatt.disconnect()
+            gatt.close()
+        }
+
     }
 
     fun sendMessage(bleDevice: BluetoothDevice) {

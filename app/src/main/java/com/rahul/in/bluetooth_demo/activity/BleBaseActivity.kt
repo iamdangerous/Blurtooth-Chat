@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.polidea.rxandroidble2.RxBleClient
 import com.rahul.`in`.bluetooth_demo.App
+import com.rahul.`in`.bluetooth_demo.service.BleService
 import io.reactivex.disposables.Disposable
 import java.util.*
 

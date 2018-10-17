@@ -11,24 +11,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.tbruyelle.rxpermissions2.RxPermissions
 
-open class BaseBleController (val rxPermissions: RxPermissions, val context: Context, val mBluetoothManager: BluetoothManager, val mBluetoothAdapter: BluetoothAdapter){
+open class BaseBleController (val context: Context, val mBluetoothManager: BluetoothManager, val mBluetoothAdapter: BluetoothAdapter){
 
     val REQUEST_ENABLE_BT = 100
-
-    @SuppressLint("CheckResult")
-    open fun requestLocationPermission() {
-        rxPermissions.request(Manifest.permission.ACCESS_COARSE_LOCATION,
-                Manifest.permission.BLUETOOTH_ADMIN,
-                Manifest.permission.READ_PHONE_STATE
-        ).subscribe { granted ->
-            if (granted) {
-                //all granted
-                startScanProcess()
-            } else {
-                //one is rejected
-            }
-        }
-    }
 
     open fun startScanProcess(){
         //DO nothing
@@ -39,7 +24,7 @@ open class BaseBleController (val rxPermissions: RxPermissions, val context: Con
         if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
             requestBluetoothEnable();
         }
-        requestLocationPermission()
+//        requestLocationPermission()
     }
 
     fun requestBluetoothEnable() {

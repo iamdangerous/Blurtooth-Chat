@@ -14,7 +14,7 @@ import com.tbruyelle.rxpermissions2.RxPermissions
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 
-class RxBleController (rxPermissions: RxPermissions, context: Context, mBluetoothManager: BluetoothManager, mBluetoothAdapter: BluetoothAdapter) : BaseBleController(rxPermissions,context,mBluetoothManager,mBluetoothAdapter){
+class RxBleController (rxPermissions: RxPermissions, context: Context, mBluetoothManager: BluetoothManager, mBluetoothAdapter: BluetoothAdapter) : BaseBleController(context,mBluetoothManager,mBluetoothAdapter){
 
     private var scanDisposable: Disposable? = null
     val rxBleClient :RxBleClient
