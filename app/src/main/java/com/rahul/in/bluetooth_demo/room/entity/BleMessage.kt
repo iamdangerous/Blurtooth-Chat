@@ -8,7 +8,7 @@ import com.rahul.`in`.bluetooth_demo.util.TimeUtil
 
 @Entity(tableName = "ble_message")
 data class BleMessage(
-        @ColumnInfo(name = "createdAtTime") val createdAtTime: String,
+        @ColumnInfo(name = "createdAt") val createdAt: String,
         @ColumnInfo(name = "senderId") var senderId: String,
         @ColumnInfo(name = "message") val message: String,
         @ColumnInfo(name = "receiverId") var receiverId: String,
@@ -23,10 +23,10 @@ data class BleMessage(
 
     companion object {
         fun createSendingMessage(text:String, receiverId:String, otherName: String) :BleMessage {
-            val createdAtTime = TimeUtil.getCurrentUTCTimestamp()
+            val createdAt = TimeUtil.getCurrentUTCTimestamp()
             val ownerId = "Rahul"
             val senderEmail = "Rahul@gmail.com"
-            return BleMessage(createdAtTime = createdAtTime,
+            return BleMessage(createdAt = createdAt,
                     senderId = ownerId,
                     message = text,
                     receiverId = receiverId,

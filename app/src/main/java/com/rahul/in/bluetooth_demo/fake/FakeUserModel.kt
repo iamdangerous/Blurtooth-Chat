@@ -5,5 +5,6 @@ data class FakeUserModel(
         val userName: String,
         val email: String,
         val primaryPhone: String,
-        val name: String
+        val name: String,
+        val avatarUrl: String
 )

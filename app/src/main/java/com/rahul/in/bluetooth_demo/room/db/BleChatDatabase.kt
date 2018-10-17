@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import android.content.Context
 import com.rahul.`in`.bluetooth_demo.room.dao.BleMessageDao
+import com.rahul.`in`.bluetooth_demo.room.dao.BleUserDao
 import com.rahul.`in`.bluetooth_demo.room.entity.BleMessage
 import kotlinx.coroutines.experimental.CoroutineScope
 import kotlinx.coroutines.experimental.Dispatchers
@@ -16,6 +17,7 @@ import kotlinx.coroutines.experimental.launch
 public abstract class BleChatDatabase : RoomDatabase() {
 
     abstract fun messageDao(): BleMessageDao
+    abstract fun bleUserDao(): BleUserDao
 
     companion object {
         @Volatile

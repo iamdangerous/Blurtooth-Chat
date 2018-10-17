@@ -69,7 +69,7 @@ class BleMeshActivity : BleBaseActivity(), BleMeshController.BleMeshControllerCa
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_ble_mesh)
 
         rvDevices = findViewById(R.id.rv_devices)
         btnTurnOnBlutooth = findViewById(R.id.btnTurnOnBlutooth)
@@ -104,10 +104,6 @@ class BleMeshActivity : BleBaseActivity(), BleMeshController.BleMeshControllerCa
         btnTurnOnBlutooth.setOnClickListener {
             //Ask all permissions
             setupBluetooth()
-
-//            val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-//            bleMeshController = BleMeshController(rxPermissions,this, bluetoothManager, bluetoothManager.adapter)
-//            bleMeshController?.callback = this@BleMeshActivity
             enableDiscoverablity()
         }
 
@@ -135,9 +131,6 @@ class BleMeshActivity : BleBaseActivity(), BleMeshController.BleMeshControllerCa
     }
 
     override fun onScanStarted(scanStarted: Boolean) {
-//        rvDevices.postDelayed({
-//            bleMeshController?.onResume()
-//        }, 2000)
     }
 
     override fun print(message: String) {

@@ -10,6 +10,7 @@ import com.rahul.`in`.bluetooth_demo.bleControllers.BleMeshController
 import com.rahul.`in`.bluetooth_demo.eventBus.EventBleConnectionUpdated
 import com.rahul.`in`.bluetooth_demo.eventBus.EventOnBleDeviceAdded
 import com.rahul.`in`.bluetooth_demo.eventBus.EventPrintMessage
+import com.rahul.`in`.bluetooth_demo.viewModel.BleUserViewModel
 import org.greenrobot.eventbus.EventBus
 import timber.log.Timber
 
@@ -19,6 +20,7 @@ class BleService:Service(), BleMeshController.BleMeshControllerCallback {
     var mServiceHandler: ServiceHandler? = null
     private var mBinder = LocalBinder()
     var mBleMeshController : BleMeshController? = null
+    lateinit var bleUserViewModel: BleUserViewModel
 
     inner class ServiceHandler(looper: Looper) : Handler(looper) {
 
