@@ -16,6 +16,6 @@ open class BleUserRepository(private val bleUserDao: BleUserDao) {
 
     @WorkerThread
     suspend fun deleteUser(bleUser: BleUser) {
-        bleUserDao.deleteMessage(bleUser)
+        bleUserDao.deleteUser(bleUser)
     }
 }

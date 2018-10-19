@@ -20,7 +20,6 @@ class BleService:Service(), BleMeshController.BleMeshControllerCallback {
     var mServiceHandler: ServiceHandler? = null
     private var mBinder = LocalBinder()
     var mBleMeshController : BleMeshController? = null
-    lateinit var bleUserViewModel: BleUserViewModel
 
     inner class ServiceHandler(looper: Looper) : Handler(looper) {
 

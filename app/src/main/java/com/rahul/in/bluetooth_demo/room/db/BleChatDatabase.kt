@@ -24,20 +24,31 @@ public abstract class BleChatDatabase : RoomDatabase() {
         private var INSTANCE: BleChatDatabase? = null
         private val DB_NAME = "Ble_Chat_database"
 
-        fun getDatabase(context: Context, scope: CoroutineScope): BleChatDatabase {
+        fun getDatabase(context: Context, scope: CoroutineScope? = null): BleChatDatabase {
             val tempInstance = INSTANCE
             if (tempInstance != null) {
                 return tempInstance
             }
             synchronized(this) {
-                val instance = Room.databaseBuilder(
-                        context.applicationContext,
-                        BleChatDatabase::class.java,
-                        DB_NAME
-                ).addCallback(BleDatabaseCallback(scope))
-                        .build()
-                INSTANCE = instance
-                return instance
+                if(scope!=null){
+                    val instance = Room.databaseBuilder(
+                            context.applicationContext,
+                            BleChatDatabase::class.java,
+                            DB_NAME
+                    ).addCallback(BleDatabaseCallback(scope))
+                            .build()
+                    INSTANCE = instance
+                    return instance
+                }else{
+                    val instance = Room.databaseBuilder(
+                            context.applicationContext,
+                            BleChatDatabase::class.java,
+                            DB_NAME
+                    ).build()
+                    INSTANCE = instance
+                    return instance
+                }
+
             }
         }
     }

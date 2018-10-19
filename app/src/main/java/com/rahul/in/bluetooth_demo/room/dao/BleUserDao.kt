@@ -1,12 +1,11 @@
 package com.rahul.`in`.bluetooth_demo.room.dao
 
 import androidx.lifecycle.LiveData
-import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Insert
-import androidx.room.Query
+import androidx.room.*
 import com.rahul.`in`.bluetooth_demo.room.entity.BleMessage
 import com.rahul.`in`.bluetooth_demo.room.entity.BleUser
+import io.reactivex.Maybe
+import io.reactivex.Single
 
 @Dao
 interface BleUserDao{
@@ -17,8 +16,14 @@ interface BleUserDao{
     @Insert
     fun insert(bleUser: BleUser)
 
+    @Query("SELECT * FROM ble_user WHERE userName =:userName LIMIT 1")
+    fun getUser(userName:String): BleUser?
+
     @Delete()
-    fun deleteMessage(bleUser: BleUser)
+    fun deleteUser(bleUser: BleUser)
+
+    @Update(onConflict = OnConflictStrategy.IGNORE)
+    fun updateUser(bleUser: BleUser)
 
     @Query("DELETE FROM ble_user")
     fun deleteAll()

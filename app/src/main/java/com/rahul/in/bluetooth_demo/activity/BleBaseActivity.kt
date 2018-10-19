@@ -39,7 +39,7 @@ open class BleBaseActivity : AppCompatActivity() {
             toast("Device doesn't support Bluetooth")
             return
         }
-        if (!mBluetoothAdapter!!.isEnabled()) {
+        if (!mBluetoothAdapter!!.isEnabled) {
             printLogInScreen("Enable adapter")
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)

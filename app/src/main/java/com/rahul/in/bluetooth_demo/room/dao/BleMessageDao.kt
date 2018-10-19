@@ -10,7 +10,7 @@ import com.rahul.`in`.bluetooth_demo.room.entity.BleMessage
 @Dao
 interface BleMessageDao{
 
-    @Query("SELECT * FROM ble_message ORDER BY createdAtTime ASC")
+    @Query("SELECT * FROM ble_message ORDER BY createdAt ASC")
     fun getAllMessages(): LiveData<ArrayList<BleMessage>>
 
     @Insert
