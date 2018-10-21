@@ -6,9 +6,13 @@ import android.bluetooth.le.*
 import android.content.Context
 import android.os.Handler
 import android.os.ParcelUuid
-import com.google.gson.Gson
 import com.rahul.`in`.bluetooth_demo.activity.BleMeshActivity
-import com.tbruyelle.rxpermissions2.RxPermissions
+import com.rahul.`in`.bluetooth_demo.bleControllers.BleMeshController.MessageQueueData.Companion.MESSAGE_BETWEEN
+import com.rahul.`in`.bluetooth_demo.bleControllers.BleMeshController.MessageQueueData.Companion.MESSAGE_END
+import com.rahul.`in`.bluetooth_demo.bleControllers.BleMeshController.MessageQueueData.Companion.MESSAGE_SINGLE
+import com.rahul.`in`.bluetooth_demo.bleControllers.BleMeshController.MessageQueueData.Companion.MESSAGE_START
+import com.rahul.`in`.bluetooth_demo.util.BleMessageUtil
+import org.json.JSONObject
 import timber.log.Timber
 import java.io.UnsupportedEncodingException
 import java.nio.charset.Charset
@@ -20,20 +24,26 @@ import kotlin.collections.HashSet
 
 class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, mBluetoothAdapter: BluetoothAdapter) : BaseBleController(context, mBluetoothManager, mBluetoothAdapter) {
 
-    var mScanning = false
-    val SERVICE_ID = "8ff5b74a-be5f-4cb4-adc7-124f39750b04"
-    val CHARACTERISTIC_ID = "8af00abb-1eff-4847-b0a2-d312cdbc6d17"
-    val DESCRIPTOR_ID = "ca71c89d-738b-4632-a6d5-bad4346f1b79"
-    val USER_META_DATA_ID = "536be339-20fe-4bb9-bccf-6d78f7b40109"
-    val USER_META_DATA_DESCRIPTOR_ID = "cf2b8b43-9d09-441c-8576-380487df9d5b"
-    val GROUP_CHAT_MSG_ID = "6b33da74-4683-40ba-82c2-61a217f47f55"
+    companion object {
+        const val DEFAULT_CHUNK_SIZE = 20
+        private val SERVICE_ID = "8ff5b74a-be5f-4cb4-adc7-124f39750b04"
+        private val CHARACTERISTIC_ID = "8af00abb-1eff-4847-b0a2-d312cdbc6d17"
+        private val DESCRIPTOR_ID = "ca71c89d-738b-4632-a6d5-bad4346f1b79"
+        private val USER_META_DATA_ID = "536be339-20fe-4bb9-bccf-6d78f7b40109"
+        private val USER_META_DATA_DESCRIPTOR_ID = "cf2b8b43-9d09-441c-8576-380487df9d5b"
+        private val ONE_TO_ONE_MSG_ID = "6b33da74-4683-40ba-82c2-61a217f47f55"
 
-    val SERVICE_UUID = UUID.fromString(SERVICE_ID)
-    val CHARACTERISTIC_UUID = UUID.fromString(CHARACTERISTIC_ID)
-    val DESCRIPTOR_UUID = UUID.fromString(DESCRIPTOR_ID)
-    val USER_META_DATA_UUID = UUID.fromString(USER_META_DATA_ID)
-    val USER_META_DATA_DESCRIPTOR_UUID = UUID.fromString(USER_META_DATA_DESCRIPTOR_ID)
-//    val ONE_TO_ONE_MSG_UUID = UUID.fromString(ONE_TO_ONE_MSG_ID)
+        val SERVICE_UUID = UUID.fromString(SERVICE_ID)
+        val CHARACTERISTIC_UUID = UUID.fromString(CHARACTERISTIC_ID)
+        val DESCRIPTOR_UUID = UUID.fromString(DESCRIPTOR_ID)
+        val USER_META_DATA_UUID = UUID.fromString(USER_META_DATA_ID)
+        val USER_META_DATA_DESCRIPTOR_UUID = UUID.fromString(USER_META_DATA_DESCRIPTOR_ID)
+        val ONE_TO_ONE_MSG_UUID = UUID.fromString(ONE_TO_ONE_MSG_ID)
+
+    }
+
+    var mScanning = false
+//      val ONE_TO_ONE_MSG_UUID = UUID.fromString(ONE_TO_ONE_MSG_ID)
 //    val GROUP_CHAT_MSG_UUID = UUID.fromString(GROUP_CHAT_MSG_ID)
 
     var mScanCallback: ScanCallback? = null
@@ -47,16 +57,15 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
     val mDevices: ArrayList<BluetoothDevice> = ArrayList()
     val mScannedDevices = HashSet<BluetoothDevice>()
     var callback: BleMeshControllerCallback? = null
+    val outboxMessageQueue = ArrayList<MessageQueueData>()
+    val inboxMessageQueue = ArrayList<MessageQueueData>()
+    var MAX_TRANSFER_BYTE = 18
 
 
     override fun startScanProcess() {
         if (mScanning) {
             return
         }
-        callback?.print("SERVICE_UUID = $SERVICE_UUID")
-        callback?.print("CHARACTERISTIC_UUID = $CHARACTERISTIC_UUID")
-        callback?.print("DESCRIPTOR_UUID = $DESCRIPTOR_UUID")
-        callback?.print("startScanProcess")
         val filters = ArrayList<ScanFilter>()
         val settings = ScanSettings.Builder()
                 .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
@@ -89,9 +98,9 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
 
     fun setupGattAdvertising() {
         callback?.print("setupGattAdvertising")
-        if (mBluetoothAdapter.isMultipleAdvertisementSupported()) {
+        if (mBluetoothAdapter.isMultipleAdvertisementSupported) {
 
-            mBluetoothLeAdvertiser = mBluetoothAdapter.getBluetoothLeAdvertiser();
+            mBluetoothLeAdvertiser = mBluetoothAdapter.bluetoothLeAdvertiser
             val gattServerCallback = GattServerCallback()
             mGattServer = mBluetoothManager.openGattServer(context, gattServerCallback)
             setupServer()
@@ -117,7 +126,7 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
                 .addServiceUuid(parcelUuid)
                 .build()
 
-        mBluetoothLeAdvertiser?.startAdvertising(settings, data, mAdvertiseCallback);
+        mBluetoothLeAdvertiser?.startAdvertising(settings, data, mAdvertiseCallback)
     }
 
     private val mAdvertiseCallback = object : AdvertiseCallback() {
@@ -136,30 +145,23 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
         callback?.print("setupServer")
         val service = BluetoothGattService(SERVICE_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY)
 
-        val characteristic = BluetoothGattCharacteristic(
-                CHARACTERISTIC_UUID,
-                BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE,
-                BluetoothGattCharacteristic.PERMISSION_WRITE)
+//        service.addCharacteristic(prepareCharateristic(CHARACTERISTIC_UUID, DESCRIPTOR_UUID))
+        val chAdded = service.addCharacteristic(prepareCharateristic(USER_META_DATA_UUID, USER_META_DATA_DESCRIPTOR_UUID))
 
-        characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+        mGattServer?.addService(service)
+    }
 
-        val descriptor = BluetoothGattDescriptor(DESCRIPTOR_UUID, BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE)
-        characteristic.addDescriptor(descriptor)
-        service.addCharacteristic(characteristic)
-
-
+    fun prepareCharateristic(characteristicUuid: UUID, descriptorUuid: UUID): BluetoothGattCharacteristic {
         val userMetaDataCharacteristic = BluetoothGattCharacteristic(
-                USER_META_DATA_UUID,
+                characteristicUuid,
                 BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE,
                 BluetoothGattCharacteristic.PERMISSION_WRITE)
 
         userMetaDataCharacteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
 
-        val metaDataDescriptor = BluetoothGattDescriptor(USER_META_DATA_DESCRIPTOR_UUID, BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE)
+        val metaDataDescriptor = BluetoothGattDescriptor(descriptorUuid, BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE)
         userMetaDataCharacteristic.addDescriptor(metaDataDescriptor)
-        service.addCharacteristic(userMetaDataCharacteristic)
-
-        mGattServer?.addService(service)
+        return userMetaDataCharacteristic
     }
 
     private fun stopServer() {
@@ -189,19 +191,24 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
             }
         }
 
+        //RECEIVER END
         override fun onCharacteristicWriteRequest(device: BluetoothDevice?, requestId: Int, characteristic: BluetoothGattCharacteristic?, preparedWrite: Boolean, responseNeeded: Boolean, offset: Int, value: ByteArray?) {
-            Timber.d("Server onCharacteristicWriteRequest Started")
             super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite, responseNeeded, offset, value)
             callback?.print("onCharacteristicWriteRequest")
-            Timber.d("Server onCharacteristicWriteRequest Ended")
             val success = mGattServer?.sendResponse(device, requestId, GATT_SUCCESS, 0, value)
 
             var textReceived = value?.toString(Charset.forName("UTF-8"))
             Timber.d("Server onCharacteristicWriteRequest, success = $success, value = ${textReceived}")
             characteristic?.value = value
-            textReceived?.apply { callback?.print(textReceived) }
+            if (textReceived != null) {
+                callback?.print(textReceived)
+            }
+            if (value != null) {
+                processInboxByte(value, characteristic!!.uuid)
+
+            }
             mBluetoothAdapter.bondedDevices.map {
-                if(it!=null) {
+                if (it != null) {
                     val notifySuccess = mGattServer?.notifyCharacteristicChanged(it, characteristic, true)
                     callback?.print("notifySuccess = $notifySuccess")
                 }
@@ -220,8 +227,6 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
         override fun onDescriptorWriteRequest(device: BluetoothDevice?, requestId: Int, descriptor: BluetoothGattDescriptor?, preparedWrite: Boolean, responseNeeded: Boolean, offset: Int, value: ByteArray?) {
             Timber.d("Server onDescriptorWriteRequest Started")
             super.onDescriptorWriteRequest(device, requestId, descriptor, preparedWrite, responseNeeded, offset, value)
-            Timber.d("Server onDescriptorWriteRequest Ended")
-
             val success = mGattServer?.sendResponse(device, requestId, GATT_SUCCESS, 0, value)
             Timber.d("Server onDescriptorWriteRequest send Response success = $success")
 
@@ -245,28 +250,28 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
 
         private fun addScanResult(result: ScanResult) {
             callback?.print("addScanResult")
-            val device = result.getDevice()
-            val deviceAddress = device.getAddress()
+            val device = result.device
+            val deviceAddress = device.address
 //            mScanResults[deviceAddress] = device
 //            connectDevice(device)
 
             if (!mScannedDevices.contains(device)) {
-                    val skipBleDevices = arrayListOf<String>(
-                            "51:8D:28:74:99:B1",
-                            "5D:FB:21:F4:19:3A",
-                            "30:35:AD:C5:DC:DD",
-                            "15:16:E4:0C:15:61",
-                            "15:16:E4:0C:15:61",
-                            "REFLEX_FD41D15FB3D6"
-                    )
-                    if (skipBleDevices.contains(device.address)) {
-                        return
-                    }
-                    mScannedDevices.add(device)
-                    callback?.print("onLeScan")
-                    callback?.onDeviceAdded(true, device)
-                    Handler().postDelayed({ connectDevice(device)}, 1000)
+                val skipBleDevices = arrayListOf<String>(
+                        "51:8D:28:74:99:B1",
+                        "5D:FB:21:F4:19:3A",
+                        "30:35:AD:C5:DC:DD",
+                        "15:16:E4:0C:15:61",
+                        "15:16:E4:0C:15:61",
+                        "REFLEX_FD41D15FB3D6"
+                )
+                if (skipBleDevices.contains(device.address)) {
+                    return
                 }
+                mScannedDevices.add(device)
+                callback?.print("onLeScan")
+                callback?.onDeviceAdded(true, device)
+                Handler().postDelayed({ connectDevice(device) }, 1000)
+            }
         }
     }
 
@@ -278,11 +283,9 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
             mGattClientCallback = GattClientCallback()
             mGattClientCallbackMap[device] = mGattClientCallback
         }
-//        if (gat == null) {
         val mGatt = device.connectGatt(context, false, mGattClientCallbackMap[device])
         mGattMap[device] = mGatt
         mGattDeviceMap[mGatt] = device
-//        }
     }
 
     inner class GattClientCallback : BluetoothGattCallback() {
@@ -296,14 +299,17 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
 
         }
 
+        //SENDER
         override fun onCharacteristicWrite(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int) {
             super.onCharacteristicWrite(gatt, characteristic, status)
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 callback?.print("Client onCharacteristicWrite: Wrote GATT Characteristic successfully.")
-                if(characteristic!!.uuid == CHARACTERISTIC_UUID){
 
-                }else if (characteristic.uuid == DESCRIPTOR_UUID){
-                    sendUserMetaData(gatt)
+                if (characteristic!!.uuid == CHARACTERISTIC_UUID) {
+
+                } else if (characteristic.uuid == USER_META_DATA_UUID) {
+                    outboxMessageQueue.removeAt(0)
+                    sendAllMessagesOfQueue(gatt)
                 }
             } else {
                 callback?.print("Client onCharacteristicWrite: Error writing GATT Characteristic: " + status);
@@ -315,8 +321,8 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 //Device Added success fully
                 callback?.print("Client onDescriptorWrite: Wrote GATT Descriptor successfully.")
-                if(descriptor!!.uuid == USER_META_DATA_DESCRIPTOR_UUID){
-                    sendUserMetaData(gatt)
+                if (descriptor!!.uuid == USER_META_DATA_DESCRIPTOR_UUID) {
+//                    sendUserMetaData(gatt)
                 }
             } else {
                 callback?.print("Client CalonDescriptorWrite: Error writing GATT Descriptor: " + status);
@@ -351,53 +357,16 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
             gatt?.apply {
                 //print available services
                 printAvailableServices(gatt)
-                val service = gatt.getService(SERVICE_UUID)
-//                var characteristic = service.getCharacteristic(CHARACTERISTIC_UUID)
-
-//                characteristic?.apply {
-//                    characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-//                    val mInitialized = gatt.setCharacteristicNotification(characteristic, true)
-//                    callback?.print("onServicesDiscovered, CH write success initiated = $mInitialized")
-//
-//                    var descriptor = characteristic.getDescriptor(DESCRIPTOR_UUID)?.apply {
-//                        value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-//                    }
-//                    if (descriptor != null) {
-//                        val descriptorWriteStartedSuccess = writeDescriptor(descriptor)
-//                        callback?.print("onServicesDiscovered, DESC write success initiated = $descriptorWriteStartedSuccess")
-//                    } else {
-//                        callback?.print("onServicesDiscovered DESCRIPTOR is null")
-//                    }
-//                }
-
-                var metaDataCh = service.getCharacteristic(USER_META_DATA_UUID)
-                metaDataCh?.apply {
-                    metaDataCh.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-                    val mInitialized = gatt.setCharacteristicNotification(metaDataCh, true)
-//                    val writeCh_Success = writeCharacteristic(metaDataCh)
-                    callback?.print("onServicesDiscovered, CH write success initiated = $mInitialized")
-//                    callback?.print("onServicesDiscovered, CH write success writeCh_Success = $writeCh_Success")
-
-                    var descriptor = metaDataCh.getDescriptor(USER_META_DATA_DESCRIPTOR_UUID)?.apply {
-                                                value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                    }
-                    if (descriptor != null) {
-                        val descriptorWriteStartedSuccess = writeDescriptor(descriptor)
-                        callback?.print("onServicesDiscovered, DESC write success initiated = $descriptorWriteStartedSuccess")
-                    } else {
-                        callback?.print("onServicesDiscovered DESCRIPTOR is null")
-                    }
-
-                }
-
+                writeFirstCharacteristic(this)
             }
         }
+
 
         override fun onCharacteristicChanged(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
             super.onCharacteristicChanged(gatt, characteristic)
             callback?.print("onCharacteristicChanged")
             characteristic?.apply {
-                when(characteristic.uuid){
+                when (characteristic.uuid) {
                     CHARACTERISTIC_UUID -> {
                         //meta data received
                         val messageBytes = characteristic.value
@@ -408,8 +377,6 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
                             Timber.e("Unable to convert message bytes to string")
                         }
                         Timber.d("Received message: " + messageString)
-
-
                     }
                 }
             }
@@ -418,6 +385,35 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
 
         override fun onDescriptorRead(gatt: BluetoothGatt?, descriptor: BluetoothGattDescriptor?, status: Int) {
             super.onDescriptorRead(gatt, descriptor, status)
+        }
+    }
+
+    fun sendAllMessagesOfQueue(gatt: BluetoothGatt?) {
+        if (outboxMessageQueue.size > 0) {
+            val data = outboxMessageQueue[0]
+            sendGenericMessage(gatt = gatt, bytes = data!!.bytes)
+        }
+    }
+
+    fun writeFirstCharacteristic(gatt: BluetoothGatt) {
+        val service = gatt.getService(SERVICE_UUID)
+        var metaDataCh = service.getCharacteristic(USER_META_DATA_UUID)
+        metaDataCh?.apply {
+            metaDataCh.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+            val mInitialized = gatt.setCharacteristicNotification(metaDataCh, true)
+            callback?.print("onServicesDiscovered, CH write success initiated = $mInitialized")
+//                    callback?.print("onServicesDiscovered, CH write success writeCh_Success = $writeCh_Success")
+
+            var descriptor = metaDataCh.getDescriptor(USER_META_DATA_DESCRIPTOR_UUID)?.apply {
+                value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+            }
+            if (descriptor != null) {
+                val descriptorWriteStartedSuccess = gatt.writeDescriptor(descriptor)
+                callback?.print("onServicesDiscovered, DESC write success initiated = $descriptorWriteStartedSuccess")
+            } else {
+                callback?.print("onServicesDiscovered DESCRIPTOR is null")
+            }
+
         }
     }
 
@@ -444,14 +440,14 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
         }
     }
 
-    fun disconnectGattServer(gatt: BluetoothGatt, retry:Boolean = false) {
+    fun disconnectGattServer(gatt: BluetoothGatt, retry: Boolean = false) {
         Timber.d("disconnectGattServer")
         callback?.print("disconnectGattServer")
         mConnectedMap[gatt] = false
-        if(retry ){
+        if (retry) {
             Timber.d("Reconnecting!!")
             gatt.connect()
-        }else {
+        } else {
             gatt.disconnect()
             gatt.close()
         }
@@ -462,9 +458,9 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
         sendUserMetaData(mGattMap[bleDevice])
     }
 
-    fun sendGenericMessage(message:String, gatt:BluetoothGatt?, characteristicUuid:UUID = CHARACTERISTIC_UUID ){
-        try{
-            if(gatt!=null){
+    private fun sendGenericMessage(gatt: BluetoothGatt?, characteristicUuid: UUID = USER_META_DATA_UUID, bytes: ByteArray? = null) {
+        try {
+            if (gatt != null) {
                 callback?.print("Sending Generic message to ${gatt.device?.address}")
                 val mConnected = mConnectedMap[gatt]
                 if ((mConnected == null || !mConnected) && !mDevices.contains(gatt.device)) {
@@ -473,33 +469,111 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
                 val service = gatt.getService(SERVICE_UUID)
                 if (service != null) {
                     val characteristic = service.getCharacteristic(characteristicUuid)
-                    var messageBytes = ByteArray(0)
-                    try {
-                        messageBytes = message.toByteArray(Charset.forName("UTF-8"))
-                    } catch (e: UnsupportedEncodingException) {
-                        Timber.e("Failed to convert message string to byte array")
-                    }
-                    characteristic?.value = messageBytes
+                    characteristic?.value = bytes
                     characteristic?.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
                     val success = gatt.writeCharacteristic(characteristic)
                     callback?.print("Sending message to ${gatt.device.address} SUCCESS = $success")
                 } else {
                     callback?.print("service is null")
                 }
-            }else{
+            } else {
                 callback?.print("Send Generic message - GATT is null")
             }
-        }catch (E:NullPointerException){
-            callback?.print("EXCEPTION - GATT is null")
-            Timber.e("EXCEPTION - GATT is null")
+        } catch (E: NullPointerException) {
+            callback?.print("sendGenericMessage EXCEPTION - GATT is null")
+            Timber.e("sendGenericMessage EXCEPTION - GATT is null")
         }
 
     }
 
-    fun sendUserMetaData(gatt: BluetoothGatt?){
-        var json = Gson().toJson(BleMeshActivity.fakeUser)
-        json = "Hi this is Iron man, from Avengers and I love my suit. And I love to play video games"
-        sendGenericMessage(json, gatt, USER_META_DATA_UUID)
+    fun sendUserMetaData(gatt: BluetoothGatt?) {
+        val jsonObject = JSONObject()
+        jsonObject.put("n", BleMeshActivity.fakeUser!!.name)
+        jsonObject.put("un", BleMeshActivity.fakeUser!!.userName)
+        jsonObject.put("e", BleMeshActivity.fakeUser!!.email)
+//        jsonObject.put("au", BleMeshActivity.fakeUser!!.avatarUrl)
+        //break the message into 20 bytes val and enqueue them in the queue
+        enqueueMessage(jsonObject.toString(), gatt, USER_META_DATA_UUID)
+    }
+
+    fun enqueueMessage(message: String, gatt: BluetoothGatt?, characteristicUuid: UUID) {
+        var messageByte = message.toByteArray(Charset.defaultCharset())
+
+        if (messageByte.size > MAX_TRANSFER_BYTE) {
+
+            val chunkSize = 20
+            val lisOfByteArray = BleMessageUtil.stringToListOfByteArray(message, chunkSize)
+
+            var index = 0
+
+            while (index < lisOfByteArray.size) {
+                if (index == 0) {
+                    //start
+                    val byteArray = lisOfByteArray[index]
+                    val messageQueueData = MessageQueueData("",byteArray.toString(Charset.defaultCharset()), byteArray, MESSAGE_START, characteristicUuid = characteristicUuid)
+                    outboxMessageQueue.add(messageQueueData)
+                } else if (index == lisOfByteArray.size - 1) {
+                    //end
+                    val byteArray = lisOfByteArray[index]
+                    val messageQueueData = MessageQueueData("",byteArray.toString(Charset.defaultCharset()), byteArray, MESSAGE_END, characteristicUuid = characteristicUuid)
+                    outboxMessageQueue.add(messageQueueData)
+                } else {
+                    //between
+                    val byteArray = lisOfByteArray[index]
+                    val messageQueueData = MessageQueueData("",byteArray.toString(Charset.defaultCharset()), byteArray, MESSAGE_BETWEEN, characteristicUuid = characteristicUuid)
+                    outboxMessageQueue.add(messageQueueData)
+                }
+                index = index + 1
+            }
+            sendMessageViaQueue(gatt)
+
+        } else {
+            val formattedMessage = "s3" + message
+            messageByte = formattedMessage.toByteArray(Charset.defaultCharset())
+            val messageQueueData = MessageQueueData("",formattedMessage, messageByte, MESSAGE_SINGLE, characteristicUuid = characteristicUuid)
+            outboxMessageQueue.add(messageQueueData)
+            sendMessageViaQueue(gatt)
+        }
+    }
+
+    fun sendMessageViaQueue(gatt: BluetoothGatt?) {
+        if (outboxMessageQueue.size > 0) {
+            sendGenericMessage(gatt = gatt, bytes = outboxMessageQueue[0]!!.bytes, characteristicUuid = outboxMessageQueue[0]!!.characteristicUuid)
+        }
+    }
+
+    fun processInboxByte(byteArray: ByteArray, characteristicUuid: UUID) {
+        val messageQueueData = BleMessageUtil.byteArrayToMessageQueueData(byteArray, characteristicUuid)
+        inboxMessageQueue.add(messageQueueData)
+        if (messageQueueData.tag == MESSAGE_END) {
+            popInboxMessageAndRead(characteristicUuid)
+        } else if (messageQueueData.tag == MESSAGE_SINGLE) {
+            popInboxMessageAndRead(characteristicUuid)
+        } else {
+        }
+    }
+
+    fun popInboxMessageAndRead(characteristicUuid: UUID, deviceId: String = "") {
+        val listOfBytes = arrayListOf<ByteArray>()
+        val listOfStrings = arrayListOf<String>()
+        var index = 0
+        while (index < inboxMessageQueue.size) {
+            var inboxMessageQueueData = inboxMessageQueue[0]
+
+            listOfBytes.add(inboxMessageQueueData.bytes)
+            listOfStrings.add(inboxMessageQueueData.message)
+            inboxMessageQueue.removeAt(0)
+
+            if (inboxMessageQueueData.tag == MessageQueueData.MESSAGE_SINGLE) {
+                inboxMessageQueue.clear()
+                break
+            } else if (inboxMessageQueueData.tag == MessageQueueData.MESSAGE_END) {
+                inboxMessageQueue.clear()
+                break
+            }
+        }
+
+        BleMessageUtil.parseInboxDataWithUUID(listOfBytes, characteristicUuid)
     }
 
     interface BleMeshControllerCallback {
@@ -507,6 +581,19 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
         fun onDeviceAdded(added: Boolean, bleDevice: BluetoothDevice)
         fun onConnectionUpdated(connectedBleDevicesSet: HashSet<BluetoothDevice>)
         fun onScanStarted(scanStarted: Boolean)
+    }
+
+    class MessageQueueData(val bleAddress: String, val message: String, val bytes: ByteArray, val tag: Int, val characteristicUuid: UUID) : Comparable<MessageQueueData> {
+        override fun compareTo(other: MessageQueueData): Int {
+            return 1
+        }
+
+        companion object {
+            const val MESSAGE_START = 49
+            const val MESSAGE_BETWEEN = 50
+            const val MESSAGE_END = 51
+            const val MESSAGE_SINGLE = 52
+        }
     }
 
 
