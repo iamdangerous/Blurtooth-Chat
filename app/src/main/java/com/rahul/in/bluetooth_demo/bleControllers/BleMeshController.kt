@@ -145,8 +145,8 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
         callback?.print("setupServer")
         val service = BluetoothGattService(SERVICE_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY)
 
-//        service.addCharacteristic(prepareCharateristic(CHARACTERISTIC_UUID, DESCRIPTOR_UUID))
-        val chAdded = service.addCharacteristic(prepareCharateristic(USER_META_DATA_UUID, USER_META_DATA_DESCRIPTOR_UUID))
+        service.addCharacteristic(prepareCharateristic(CHARACTERISTIC_UUID, DESCRIPTOR_UUID))
+        service.addCharacteristic(prepareCharateristic(USER_META_DATA_UUID, USER_META_DATA_DESCRIPTOR_UUID))
 
         mGattServer?.addService(service)
     }
@@ -483,7 +483,6 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
             callback?.print("sendGenericMessage EXCEPTION - GATT is null")
             Timber.e("sendGenericMessage EXCEPTION - GATT is null")
         }
-
     }
 
     fun sendUserMetaData(gatt: BluetoothGatt?) {
