@@ -26,12 +26,12 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
 
     companion object {
         const val DEFAULT_CHUNK_SIZE = 20
-        private val SERVICE_ID = "8ff5b74a-be5f-4cb4-adc7-124f39750b04"
-        private val CHARACTERISTIC_ID = "8af00abb-1eff-4847-b0a2-d312cdbc6d17"
-        private val DESCRIPTOR_ID = "ca71c89d-738b-4632-a6d5-bad4346f1b79"
-        private val USER_META_DATA_ID = "536be339-20fe-4bb9-bccf-6d78f7b40109"
-        private val USER_META_DATA_DESCRIPTOR_ID = "cf2b8b43-9d09-441c-8576-380487df9d5b"
-        private val ONE_TO_ONE_MSG_ID = "6b33da74-4683-40ba-82c2-61a217f47f55"
+        private val SERVICE_ID = "0d2bd6b0-6120-4ed2-90bc-7bb42d25261d"
+        private val CHARACTERISTIC_ID = "f4c5fb1f-ac1e-475a-b442-167b829642e6"
+        private val DESCRIPTOR_ID = "c9c19a7d-8013-4d1d-a1db-f72434c188fd"
+        private val USER_META_DATA_ID = "02deb964-eca6-4e90-bb99-899aafd6f118"
+        private val USER_META_DATA_DESCRIPTOR_ID = "5acef6cd-3019-45ab-869e-6d80aba85b08"
+        private val ONE_TO_ONE_MSG_ID = "83eaf60f-f30f-42ef-8a54-977360dcd370"
 
         val SERVICE_UUID = UUID.fromString(SERVICE_ID)
         val CHARACTERISTIC_UUID = UUID.fromString(CHARACTERISTIC_ID)
@@ -198,7 +198,8 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
             val success = mGattServer?.sendResponse(device, requestId, GATT_SUCCESS, 0, value)
 
             var textReceived = value?.toString(Charset.forName("UTF-8"))
-            Timber.d("Server onCharacteristicWriteRequest, success = $success, value = ${textReceived}")
+
+            Timber.d("Server onCharacteristicWriteRequest, success = $success, value = ${textReceived}, device id = ${device!!.address} NEW")
             characteristic?.value = value
             if (textReceived != null) {
                 callback?.print(textReceived)
@@ -267,6 +268,7 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
                 if (skipBleDevices.contains(device.address)) {
                     return
                 }
+                Timber.d("mScannedDevices id = ${device.address} NEW")
                 mScannedDevices.add(device)
                 callback?.print("onLeScan")
                 callback?.onDeviceAdded(true, device)
@@ -283,6 +285,7 @@ class BleMeshController(context: Context, mBluetoothManager: BluetoothManager, m
             mGattClientCallback = GattClientCallback()
             mGattClientCallbackMap[device] = mGattClientCallback
         }
+        Timber.d("connectDevice id = ${device.address} NEW")
         val mGatt = device.connectGatt(context, false, mGattClientCallbackMap[device])
         mGattMap[device] = mGatt
         mGattDeviceMap[mGatt] = device
